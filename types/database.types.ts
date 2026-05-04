@@ -66,6 +66,8 @@ export type Database = {
           active: boolean
           attributes: Array<{ label: string; value: string }>
           supplier_id: string | null
+          search_vector: string | null   
+          deleted_at: string | null       
           created_at: string
           updated_at: string
         }
