@@ -12,12 +12,14 @@ export async function generateStaticParams() {
   return (data ?? []).map(p => ({ slug: p.slug }))
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params   // ← resolve a Promise
+
   const supabase = await createClient()
   const { data: product } = await supabase
     .from('products')
     .select('*, category:categories(name, slug), reviews(rating, comment, verified, created_at, user:profiles(full_name))')
-    .eq('slug', params.slug)
+    .eq('slug', slug)   // ← usa a variável extraída
     .eq('active', true)
     .is('deleted_at', null)
     .single()

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: ['ftp2'],
-  turbopack: false,  // ← Colocado na raiz, não em experimental
+  turbopack: {},   // ← objeto vazio (não false)
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.resolve.fallback = {
