@@ -10,12 +10,19 @@ const STATUS_STEPS = [
   { id: 'entregue',             label: 'Entregue',              icon: '🎉' },
 ]
 
-export default async function RastreioPage({ params }: { params: { orderId: string } }) {
+interface PageProps {
+  params: Promise<{ orderId: string }>
+}
+
+export default async function RastreioPage({ params }: PageProps) {
+  // Aguarda os parâmetros antes de usar
+  const { orderId } = await params
+
   const supabase = await createClient()
   const { data: order } = await supabase
     .from('orders')
     .select('*, order_items(name, quantity, unit_price)')
-    .eq('id', params.orderId)
+    .eq('id', orderId)
     .single()
 
   if (!order) notFound()
@@ -32,7 +39,7 @@ export default async function RastreioPage({ params }: { params: { orderId: stri
       <div className="mt-6 mb-10">
         <h1 className="font-playfair text-3xl text-amber-100">Rastreamento</h1>
         <p className="text-amber-700 text-xs uppercase tracking-widest mt-1">
-          Pedido #{params.orderId.slice(0, 8)}
+          Pedido #{orderId.slice(0, 8)}
         </p>
       </div>
 
