@@ -50,7 +50,7 @@ export default async function CatalogoPage({
       .from('categories')
       .select('id')
       .eq('slug', params.categoria)
-      .single()
+      .single<{ id: string }>() // ← tipagem explícita resolve o 'never'
 
     if (cat?.id) {
       query = query.eq('category_id', cat.id)
