@@ -1,7 +1,7 @@
 // components/storefront/BrazilMapSVG.tsx
 'use client'
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
+import { ComposableMap, Geographies, Geography } from '@vnedyalk0v/react19-simple-maps'
 
 const GEO_URL = 'https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/brazil-states.geojson'
 
