@@ -2,6 +2,28 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 
+// ✅ Tipo com os campos que a página realmente usa
+type RastreioOrder = {
+  status: string
+  total: number
+  tracking_code: string | null
+  shipping_address: {
+    nome: string
+    rua: string
+    numero: string
+    complemento?: string
+    bairro: string
+    cidade: string
+    estado: string
+    cep: string
+  } | null
+  order_items: Array<{
+    name: string
+    quantity: number
+    unit_price: number
+  }>
+}
+
 const STATUS_STEPS = [
   { id: 'aguardando_pagamento', label: 'Aguardando Pagamento', icon: '🕐' },
   { id: 'pago',                 label: 'Pagamento Confirmado',  icon: '✅' },
@@ -11,13 +33,16 @@ const STATUS_STEPS = [
 ]
 
 export default async function RastreioPage({ params }: { params: Promise<{ orderId: string }> }) {
-  const { orderId } = await params  // ← agora resolve a Promise
+  const { orderId } = await params
   const supabase = await createClient()
-  const { data: order } = await supabase
+  const { data } = await supabase
     .from('orders')
     .select('*, order_items(name, quantity, unit_price)')
     .eq('id', orderId)
     .single()
+
+  // 👇 Aqui está a mágica: dizemos ao TypeScript que o dado tem o formato certo
+  const order = data as RastreioOrder | null
 
   if (!order) notFound()
 
@@ -79,7 +104,7 @@ export default async function RastreioPage({ params }: { params: Promise<{ order
       <div className="bg-[#1A0F08] border border-amber-900/20 p-5 mb-6">
         <h2 className="text-amber-500 text-[10px] uppercase tracking-widest mb-4">Detalhes do Pedido</h2>
         <div className="space-y-2">
-          {(order.order_items ?? []).map((item: any, i: number) => (
+          {(order.order_items ?? []).map((item, i) => (
             <div key={i} className="flex justify-between text-sm">
               <span className="text-amber-300">{item.name} × {item.quantity}</span>
               <span className="text-amber-500">
