@@ -16,8 +16,10 @@ const VALID_STATUSES: OrderStatus[] = [
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params  // ← resolve a Promise
+
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -59,7 +61,7 @@ export async function PATCH(
     const { data: order, error } = await supabase
       .from('orders')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)   // ← usa id no lugar de params.id
       .select('id, status, customer_id')
       .single()
 
@@ -68,12 +70,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 })
     }
 
-    revalidatePath(`/conta/pedidos/${params.id}`)
+    revalidatePath(`/conta/pedidos/${id}`)  // ← id
     revalidatePath('/admin/pedidos')
 
     return NextResponse.json({ id: order.id, status: order.status })
   } catch (err) {
-    console.error(`[PATCH /api/admin/pedidos/${params.id}/status]`, err)
+    console.error(`[PATCH /api/admin/pedidos/${id}/status]`, err)  // ← id
     return NextResponse.json({ error: 'Erro ao atualizar status' }, { status: 500 })
   }
 }
