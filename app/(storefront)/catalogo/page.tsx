@@ -13,6 +13,22 @@ interface SearchParams {
   cursor?:      string
 }
 
+type CatalogProduct = {
+  id: string
+  slug: string
+  sku: string
+  name: string
+  brand: string | null
+  sale_price: number
+  compare_price: number | null
+  stock: number
+  images: string[]
+  intensity: string | null
+  tags: string[]
+  origin_country: string | null
+  category: { name: string; slug: string } | null
+}
+
 export const revalidate = 120
 
 export default async function CatalogoPage({
@@ -42,15 +58,12 @@ export default async function CatalogoPage({
     })
   }
 
-  // ── Filtro de categoria ────────────────────────────────────────────────────
-  // Supabase não suporta filtrar por coluna de tabela relacionada via .eq()
-  // Solução: buscar o category_id pelo slug e filtrar diretamente na FK
   if (params.categoria) {
     const { data: cat } = await supabase
       .from('categories')
       .select('id')
       .eq('slug', params.categoria)
-      .single<{ id: string }>() // ← tipagem explícita resolve o 'never'
+      .single<{ id: string }>()
 
     if (cat?.id) {
       query = query.eq('category_id', cat.id)
@@ -64,7 +77,8 @@ export default async function CatalogoPage({
   if (params.tag)         query = query.contains('tags', [params.tag])
   if (params.cursor)      query = query.lt('created_at', params.cursor)
 
-  const { data: products, error } = await query
+  const { data: rawProducts, error } = await query
+  const products = (rawProducts as CatalogProduct[]) ?? []
 
   if (error) {
     console.error('Erro ao buscar produtos:', error)
