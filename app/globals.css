@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-playfair: var(--font-playfair);
+  --font-dm-sans: var(--font-dm-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --bg-base:     #0D0805;
+  --bg-card:     #100B07;
+  --bg-card-alt: #1A0F06;
+  --cream:       #F5ECD7;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; cursor: none; }
+
+/* Mobile: restore cursor */
+@media (pointer: coarse) {
+  html { cursor: auto; }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--cream);
+  font-family: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.font-playfair { font-family: var(--font-playfair), 'Playfair Display', Georgia, serif; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0D0805; }
+::-webkit-scrollbar-thumb { background: #92400e; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #d97706; }
+
+::selection { background: rgba(217,119,6,0.3); color: #fef3c7; }
+
+/* ── Marquee ─────────────────────────────────────────────────────────── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 28s linear infinite; }
+
+/* ── Ember pulse ─────────────────────────────────────────────────────── */
+@keyframes ember-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.animate-ember { animation: ember-pulse 1.8s ease-in-out infinite; }
+
+/* ── Gold shimmer ────────────────────────────────────────────────────── */
+@keyframes gold-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.shimmer-gold {
+  background: linear-gradient(90deg, #d97706 0%, #fcd34d 40%, #d97706 60%, #d97706 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.shimmer-gold:hover { animation: gold-shimmer 1.5s linear infinite; }
+
+/* ── Fade in up utility ──────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+/* ── Mobile responsive overrides ────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Ensure hero text is readable on mobile */
+  .hero-title { font-size: clamp(2.5rem, 10vw, 5rem) !important; }
+
+  /* Admin kanban scrollable */
+  .kanban-scroll { -webkit-overflow-scrolling: touch; }
+
+  /* Table responsive */
+  .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* ── Drag state ──────────────────────────────────────────────────────── */
+[draggable="true"] {
+  -webkit-user-drag: element;
+  user-select: none;
 }
