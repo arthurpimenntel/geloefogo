@@ -1,21 +1,16 @@
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: '*.supabase.co' },
-      { protocol: 'https', hostname: '*.supabase.in' },
-      { protocol: 'https', hostname: 'r2.cloudflarestorage.com' },
-      { protocol: 'https', hostname: '*.r2.dev' },
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
-      // allow any HTTPS for product images from suppliers
-      { protocol: 'https', hostname: '**' },
-    ],
+const nextConfig = {
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        dns: false,
+        fs: false
+      };
+    }
+    return config;
   },
-  experimental: {
-    // serverComponentsExternalPackages removed in Next 15+
-  },
-}
+};
 
-export default nextConfig
+module.exports = nextConfig;

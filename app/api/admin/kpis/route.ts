@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   const supabase = createClient()
 
-  -- Garante que é admin antes de prosseguir
   const { data: profile } = await supabase
     .from('profiles').select('role').single()
   if (!profile || !['manager','super_admin'].includes(profile.role))
@@ -24,7 +23,7 @@ export async function GET() {
       .select('id', { count: 'exact' })
       .in('status', ['pago', 'processando']),
 
-    supabase.rpc('get_revenue_summary')   -- SQL function personalizada
+    supabase.rpc('get_revenue_summary')   
   ])
 
   const orders   = monthOrders.data ?? []
