@@ -10,14 +10,8 @@ const STATUS_STEPS = [
   { id: 'entregue',             label: 'Entregue',              icon: '🎉' },
 ]
 
-interface PageProps {
-  params: Promise<{ orderId: string }>
-}
-
-export default async function RastreioPage({ params }: PageProps) {
-  // Aguarda os parâmetros antes de usar
-  const { orderId } = await params
-
+export default async function RastreioPage({ params }: { params: Promise<{ orderId: string }> }) {
+  const { orderId } = await params  // ← agora resolve a Promise
   const supabase = await createClient()
   const { data: order } = await supabase
     .from('orders')
@@ -52,7 +46,6 @@ export default async function RastreioPage({ params }: PageProps) {
             const last    = i === STATUS_STEPS.length - 1
             return (
               <div key={step.id} className="flex gap-4">
-                {/* Line */}
                 <div className="flex flex-col items-center">
                   <div className={`w-8 h-8 flex items-center justify-center text-sm flex-shrink-0
                     border-2 transition-colors ${done
@@ -66,7 +59,6 @@ export default async function RastreioPage({ params }: PageProps) {
                     <div className={`w-px flex-1 min-h-[2rem] ${done && !current ? 'bg-amber-700/50' : 'bg-amber-900/20'}`} />
                   )}
                 </div>
-                {/* Label */}
                 <div className="pb-8">
                   <p className={`text-sm font-medium ${current ? 'text-amber-200' : done ? 'text-amber-500' : 'text-amber-900'}`}>
                     {step.label}
