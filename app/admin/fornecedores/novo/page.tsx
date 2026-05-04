@@ -34,7 +34,7 @@ const INPUT = `bg-[#0D0805] border border-amber-900/40 text-amber-100 px-4 py-2.
 
 export default function NovoFornecedorPage() {
   const router   = useRouter()
-  const supabase = createClient()
+  const supabase =  createClient()
 
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)

@@ -37,8 +37,8 @@ export default function AdminLoginPage() {
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single()
-      
+        .single<{ role: string }>()   // ← tipagem explícita resolve o 'never'
+
       if (profileError) throw new Error('Erro ao verificar permissões')
       
       const adminRoles = ['support', 'manager', 'super_admin']

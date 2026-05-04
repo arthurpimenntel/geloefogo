@@ -28,7 +28,7 @@ const SUGESTOES = [
 ]
 
 export default function CJImportPage() {
-  const supabase = createClient()
+  const supabase =  createClient()
 
   const [keyword,    setKeyword]    = useState('')
   const [minPrice,   setMinPrice]   = useState('')
