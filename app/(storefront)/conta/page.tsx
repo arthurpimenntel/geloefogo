@@ -4,6 +4,22 @@ import Link from 'next/link'
 
 export const revalidate = 0
 
+// Tipos auxiliares (evitam o "never")
+type Profile = {
+  full_name: string | null
+  phone: string | null
+  cpf: string | null
+  points: number
+}
+
+type Order = {
+  id: string
+  status: string
+  total: number
+  created_at: string
+  tracking_code: string | null
+}
+
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   aguardando_pagamento: { label: 'Aguardando Pagamento', color: 'text-yellow-400' },
   pago:                 { label: 'Pago',                  color: 'text-blue-400' },
@@ -29,8 +45,9 @@ export default async function MinhaContaPage() {
       .limit(20),
   ])
 
-  const profile = profileRes.data
-  const orders  = ordersRes.data ?? []
+  // Dizemos ao TypeScript os tipos corretos
+  const profile = profileRes.data as Profile | null
+  const orders  = (ordersRes.data ?? []) as Order[]
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-12">
