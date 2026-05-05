@@ -20,7 +20,7 @@ export default async function FornecedoresPage() {
     .limit(20)
 
   // Verifica se já existe fornecedor AliExpress cadastrado e se está conectado
-  const aeSupplier  = (suppliers ?? []).find(s => s.name?.toLowerCase().includes('aliexpress'))
+  const aeSupplier  = (suppliers ?? []).find(s => s.name?.toLowerCase().includes('ali express') || s.name?.toLowerCase().includes('aliexpress'))
   const aeConnected = !!aeSupplier?.active
   const aeConfig    = aeSupplier ? await supabase
     .from('suppliers')
