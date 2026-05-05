@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { motion } from 'framer-motion'
@@ -8,7 +8,7 @@ import Link from 'next/link'
 
 type Mode = 'login' | 'register' | 'forgot'
 
-export default function EntrarPage() {
+function EntrarForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/'
@@ -44,16 +44,14 @@ export default function EntrarPage() {
         })
         if (error) throw error
 
-        // Supabase retorna user sem identities quando o email já existe
         if (signUpData.user && signUpData.user.identities?.length === 0) {
           throw new Error('User already registered')
         }
 
-        // Se email confirm está OFF, já tem sessão — atualiza o full_name no perfil
         if (signUpData.user && signUpData.session) {
           await supabase
             .from('profiles')
-            .update({ full_name: name })
+            .update({ full_name: name } as any)
             .eq('id', signUpData.user.id)
         }
 
@@ -98,7 +96,6 @@ export default function EntrarPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-16
       bg-[#0D0805] relative overflow-hidden">
 
-      {/* Background decorativo */}
       <div
         className="absolute inset-0 opacity-5 pointer-events-none"
         style={{
@@ -112,7 +109,6 @@ export default function EntrarPage() {
         transition={{ duration: 0.5, ease: [0.25, 0, 0, 1] }}
         className="w-full max-w-md relative"
       >
-        {/* Logo */}
         <div className="text-center mb-10">
           <Link href="/" className="inline-block">
             <p className="font-playfair text-amber-300 text-2xl tracking-[0.1em]">
@@ -125,7 +121,6 @@ export default function EntrarPage() {
         </div>
 
         <div className="bg-[#100B07] border border-amber-900/30 p-8">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="font-playfair text-2xl text-amber-100">{TITLE[mode]}</h1>
             <p className="text-amber-700 text-xs mt-1 uppercase tracking-widest">
@@ -133,7 +128,6 @@ export default function EntrarPage() {
             </p>
           </div>
 
-          {/* Mode tabs (login/register only) */}
           {mode !== 'forgot' && (
             <div className="flex border border-amber-900/30 mb-8">
               {(['login', 'register'] as const).map((m) => (
@@ -152,70 +146,42 @@ export default function EntrarPage() {
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
-              <Field
-                label="Nome completo"
-                type="text"
-                value={name}
-                onChange={setName}
-                placeholder="João Silva"
-                required
-              />
+              <Field label="Nome completo" type="text" value={name} onChange={setName} placeholder="João Silva" required />
             )}
-            <Field
-              label="E-mail"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="seu@email.com"
-              required
-            />
+            <Field label="E-mail" type="email" value={email} onChange={setEmail} placeholder="seu@email.com" required />
             {mode !== 'forgot' && (
-              <Field
-                label="Senha"
-                type="password"
-                value={password}
-                onChange={setPass}
-                placeholder="••••••••"
-                required
-              />
+              <Field label="Senha" type="password" value={password} onChange={setPass} placeholder="••••••••" required />
             )}
 
-            {/* Forgot link */}
             {mode === 'login' && (
               <div className="text-right">
                 <button
                   type="button"
                   onClick={() => { setMode('forgot'); setError(null) }}
-                  className="text-[11px] text-amber-800 hover:text-amber-500 transition-colors
-                    uppercase tracking-widest"
+                  className="text-[11px] text-amber-800 hover:text-amber-500 transition-colors uppercase tracking-widest"
                 >
                   Esqueci minha senha
                 </button>
               </div>
             )}
 
-            {/* Error */}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-900/20 border border-red-800/40 px-4 py-3
-                  text-red-300 text-xs"
+                className="bg-red-900/20 border border-red-800/40 px-4 py-3 text-red-300 text-xs"
               >
                 {error}
               </motion.div>
             )}
 
-            {/* Success */}
             {success && (
               <motion.div
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-green-900/20 border border-green-800/40 px-4 py-3
-                  text-green-300 text-xs"
+                className="bg-green-900/20 border border-green-800/40 px-4 py-3 text-green-300 text-xs"
               >
                 {success}
               </motion.div>
@@ -225,32 +191,24 @@ export default function EntrarPage() {
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-amber-700 hover:bg-amber-600 disabled:opacity-50
-                text-[#0D0805] text-xs font-bold uppercase tracking-[0.2em]
-                transition-colors mt-2"
+                text-[#0D0805] text-xs font-bold uppercase tracking-[0.2em] transition-colors mt-2"
             >
               {loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : mode === 'register' ? 'Criar Conta' : 'Enviar Link'}
             </button>
           </form>
 
-          {/* Back to login when forgot */}
           {mode === 'forgot' && (
             <button
               onClick={() => { setMode('login'); setError(null) }}
-              className="mt-6 block text-center text-xs text-amber-800
-                hover:text-amber-500 uppercase tracking-widest transition-colors w-full"
+              className="mt-6 block text-center text-xs text-amber-800 hover:text-amber-500 uppercase tracking-widest transition-colors w-full"
             >
               ← Voltar para login
             </button>
           )}
         </div>
 
-        {/* Back to store */}
         <p className="text-center mt-6">
-          <Link
-            href="/"
-            className="text-amber-800 hover:text-amber-500 text-[11px]
-              uppercase tracking-widest transition-colors"
-          >
+          <Link href="/" className="text-amber-800 hover:text-amber-500 text-[11px] uppercase tracking-widest transition-colors">
             ← Voltar à loja
           </Link>
         </p>
@@ -285,5 +243,17 @@ function Field({
           transition-colors placeholder:text-amber-900 w-full"
       />
     </div>
+  )
+}
+
+export default function EntrarPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0805]">
+        <p className="text-amber-700 text-xs uppercase tracking-widest">Carregando...</p>
+      </div>
+    }>
+      <EntrarForm />
+    </Suspense>
   )
 }
