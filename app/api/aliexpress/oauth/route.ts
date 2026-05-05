@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createHmac } from 'crypto'
+import { createHmac, createHash } from 'crypto'
 
 const APP_KEY    = process.env.ALIEXPRESS_APP_KEY!
 const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET!
@@ -8,17 +8,18 @@ const BASE_URL   = process.env.NEXT_PUBLIC_SITE_URL!
 const API_HOST   = 'https://api-sg.aliexpress.com'
 const API_PATH   = '/rest/auth/token/create'
 
-function signRequest(
-  apiPath: string,
-  params: Record<string, string>,
-  secret: string
-): string {
+// IOP SDK REST — para chamadas normais de API
+function signRest(apiPath: string, params: Record<string, string>, secret: string): string {
   const sorted = Object.keys(params).sort()
   const stringToSign = apiPath + sorted.map(k => `${k}${params[k]}`).join('')
-  return createHmac('sha256', secret)
-    .update(stringToSign, 'utf8')
-    .digest('hex')
-    .toUpperCase()
+  return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
+}
+
+// TOP API legado — para endpoints de auth/token
+function signMD5(params: Record<string, string>, secret: string): string {
+  const sorted = Object.keys(params).sort()
+  const str = secret + sorted.map(k => `${k}${params[k]}`).join('') + secret
+  return createHash('md5').update(str, 'utf8').digest('hex').toUpperCase()
 }
 
 export async function GET(req: NextRequest) {
@@ -37,8 +38,6 @@ export async function GET(req: NextRequest) {
     authUrl.searchParams.set('force_auth', 'true')
     authUrl.searchParams.set('redirect_uri', callbackUrl)
     authUrl.searchParams.set('client_id', APP_KEY)
-
-    console.log('[AliExpress] AUTH URL:', authUrl.toString())
     return NextResponse.redirect(authUrl.toString())
   }
 
@@ -47,17 +46,19 @@ export async function GET(req: NextRequest) {
     try {
       const timestamp = String(Date.now())
 
+      // Tenta MD5 (TOP API legado) primeiro
       const paramsToSign: Record<string, string> = {
         app_key:     APP_KEY,
         code,
-        sign_method: 'sha256',
+        sign_method: 'md5',
         timestamp,
       }
 
-      const sign = signRequest(API_PATH, paramsToSign, APP_SECRET)
+      const sign = signMD5(paramsToSign, APP_SECRET)
 
-      const debugStr = API_PATH + Object.keys(paramsToSign).sort()
-        .map(k => `${k}${paramsToSign[k]}`).join('')
+      const debugStr = APP_SECRET + Object.keys(paramsToSign).sort()
+        .map(k => `${k}${paramsToSign[k]}`).join('') + APP_SECRET
+      console.log('[AliExpress] method: MD5 TOP-style')
       console.log('[AliExpress] stringToSign:', debugStr)
       console.log('[AliExpress] sign:', sign)
 
