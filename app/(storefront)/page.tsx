@@ -139,67 +139,72 @@ export default async function HomePage() {
     <>
       <HeroSection />
 
+      {/*
+        CSS inline via <style> — garante responsividade sem depender do Tailwind purge.
+        #store-bg-desktop some no mobile, #store-bg-mobile some no desktop.
+      */}
+      <style>{`
+        #store-bg-desktop { display: block; }
+        #store-bg-mobile  { display: none;  }
+        @media (max-width: 767px) {
+          #store-bg-desktop { display: none;  }
+          #store-bg-mobile  { display: block; }
+        }
+      `}</style>
+
       {/* ── SEÇÃO DA LOJA ── */}
       <section style={{ position: 'relative', overflow: 'hidden' }}>
 
-        {/* Imagem de fundo desktop — position absolute com top/bottom/left/right: 0 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
+          id="store-bg-desktop"
           src="/images/fotodesktop.jpg"
           alt=""
           aria-hidden="true"
-          className="hidden md:block"
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: 0, left: 0, right: 0, bottom: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center',
-            opacity: 0.25,
+            opacity: 0.35,
             pointerEvents: 'none',
             zIndex: 0,
           }}
         />
 
-        {/* Imagem de fundo mobile */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
+          id="store-bg-mobile"
           src="/images/fotomobile.jpg"
           alt=""
           aria-hidden="true"
-          className="block md:hidden"
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: 0, left: 0, right: 0, bottom: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center',
-            opacity: 0.25,
+            opacity: 0.35,
             pointerEvents: 'none',
             zIndex: 0,
           }}
         />
 
-        {/* Overlay escuro para contraste */}
+        {/* Overlay de contraste */}
         <div
           style={{
             position: 'absolute',
             top: 0, left: 0, right: 0, bottom: 0,
-            background: 'linear-gradient(to bottom, rgba(13,8,5,0.80) 0%, rgba(13,8,5,0.50) 50%, rgba(13,8,5,0.80) 100%)',
+            background: 'linear-gradient(to bottom, rgba(13,8,5,0.75) 0%, rgba(13,8,5,0.45) 50%, rgba(13,8,5,0.75) 100%)',
             pointerEvents: 'none',
             zIndex: 1,
           }}
         />
 
-        {/* Conteúdo — z-index acima do fundo */}
+        {/* Conteúdo */}
         <div style={{ position: 'relative', zIndex: 2 }} className="max-w-7xl mx-auto px-4 py-20">
           <div className="flex items-end justify-between mb-10">
             <div>
@@ -214,7 +219,7 @@ export default async function HomePage() {
             </a>
           </div>
 
-          <div className="relative" style={{ zIndex: 2 }}>
+          <div style={{ position: 'relative', zIndex: 2 }}>
             <div
               style={{
                 position: 'absolute',
