@@ -92,12 +92,12 @@ export function HeroSection() {
         style={{ x: fgX, y: fgY }}
       >
         <p className="text-amber-600 text-xs uppercase tracking-[0.25em] mb-4">
-          Tabacaria Premium · Desde 2020
+          Tabacaria Premium 
         </p>
         <h1 className="font-playfair text-6xl md:text-8xl text-amber-100 leading-tight">
           O prazer da<br />
-          <span className="text-amber-400">tradição</span><br />
-          em cada baforada.
+          <span className="text-amber-400">qualidade</span><br />
+          em cada tragada.
         </h1>
         <div className="flex gap-4 mt-10">
           <Link

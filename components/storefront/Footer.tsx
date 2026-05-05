@@ -35,7 +35,7 @@ export function Footer() {
           </div>
           <p className="text-amber-700 text-xs leading-relaxed max-w-[220px]">
             Os melhores charutos, cachimbos e acessórios importados.
-            Entregamos prazeres selecionados em todo o Brasil desde 2020.
+            Entregamos prazeres selecionados em todo o Brasil.
           </p>
           <div className="flex gap-3 mt-6">
             {[
