@@ -31,18 +31,21 @@ export async function GET(req: NextRequest) {
   const code   = searchParams.get('code')
 
   if (action === 'connect') {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.redirect(`${BASE_URL}/admin/login`)
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.redirect(`${BASE_URL}/admin/login`)
 
-    const callbackUrl = `${BASE_URL}/api/aliexpress/oauth`
-    const authUrl = new URL('https://auth.aliexpress.com/oauth/authorize')
-    authUrl.searchParams.set('response_type', 'code')
-    authUrl.searchParams.set('force_auth', 'true')
-    authUrl.searchParams.set('redirect_uri', callbackUrl)
-    authUrl.searchParams.set('client_id', APP_KEY)
-    return NextResponse.redirect(authUrl.toString())
-  }
+  const callbackUrl = `${BASE_URL}/api/aliexpress/oauth`
+  const authUrl = new URL('https://auth.aliexpress.com/oauth/authorize')
+  authUrl.searchParams.set('response_type', 'code')
+  authUrl.searchParams.set('force_auth', 'true')
+  authUrl.searchParams.set('redirect_uri', callbackUrl)
+  authUrl.searchParams.set('client_id', APP_KEY)
+
+  console.log('[AliExpress] AUTH URL:', authUrl.toString())  // ← linha nova
+
+  return NextResponse.redirect(authUrl.toString())
+}
 
   if (code) {
     const supabase = await createClient()
