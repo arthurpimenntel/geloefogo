@@ -7,50 +7,56 @@ const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET!
 const BASE_URL   = process.env.NEXT_PUBLIC_SITE_URL!
 const API_HOST   = 'https://api-sg.aliexpress.com'
 
-function signRest(apiPath: string, params: Record<string, string>, secret: string): string {
-  const sorted = Object.keys(params).sort()
-  const stringToSign = apiPath + sorted.map(k => `${k}${params[k]}`).join('')
-  return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
-}
+const CALLBACK_URL = `${BASE_URL}/api/aliexpress/oauth`
 
-function signMD5(params: Record<string, string>, secret: string): string {
-  const sorted = Object.keys(params).sort()
-  const str = secret + sorted.map(k => `${k}${params[k]}`).join('') + secret
-  return createHash('md5').update(str, 'utf8').digest('hex').toUpperCase()
-}
-
+// SHA256 HMAC sem path (padrão REST token)
 function signNoPath(params: Record<string, string>, secret: string): string {
   const sorted = Object.keys(params).sort()
   const stringToSign = sorted.map(k => `${k}${params[k]}`).join('')
   return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
 }
 
+// SHA256 HMAC com path
+function signRest(apiPath: string, params: Record<string, string>, secret: string): string {
+  const sorted = Object.keys(params).sort()
+  const stringToSign = apiPath + sorted.map(k => `${k}${params[k]}`).join('')
+  return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
+}
+
+// MD5 correto: secret + params + secret
+function signMD5(params: Record<string, string>, secret: string): string {
+  const sorted = Object.keys(params).sort()
+  const str = secret + sorted.map(k => `${k}${params[k]}`).join('') + secret
+  return createHash('md5').update(str, 'utf8').digest('hex').toUpperCase()
+}
+
 async function tryTokenExchange(code: string) {
   const tsMs = String(Date.now())
 
+  // Campos base — grant_type e redirect_uri são OBRIGATÓRIOS
+  const baseParams = {
+    app_key:      APP_KEY,
+    code,
+    grant_type:   'authorization_code',   // ← FALTAVA ISSO
+    redirect_uri: CALLBACK_URL,           // ← E ISSO
+    timestamp:    tsMs,
+  }
+
   const attempts = [
     {
-      label: 'SHA256 sem path ts-ms',
-      path: '/rest/auth/token/create',
-      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsMs },
+      label:  'SHA256 sem path',
+      params: { ...baseParams, sign_method: 'sha256' },
       signFn: (p: Record<string, string>) => signNoPath(p, APP_SECRET),
     },
     {
-      label: 'MD5 sem path ts-ms',
-      path: '/rest/auth/token/create',
-      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp: tsMs },
-      signFn: (p: Record<string, string>) => signNoPath(p, APP_SECRET),
+      label:  'SHA256 com path',
+      params: { ...baseParams, sign_method: 'sha256' },
+      signFn: (p: Record<string, string>) =>
+        signRest('/rest/auth/token/create', p, APP_SECRET),
     },
     {
-      label: 'SHA256 com path ts-ms',
-      path: '/rest/auth/token/create',
-      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsMs },
-      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
-    },
-    {
-      label: 'MD5 secret-wrap ts-ms',
-      path: '/rest/auth/token/create',
-      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp: tsMs },
+      label:  'MD5 secret-wrap',
+      params: { ...baseParams, sign_method: 'md5' },
       signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
     },
   ]
@@ -62,7 +68,7 @@ async function tryTokenExchange(code: string) {
     console.log(`[AliExpress] Tentando: ${attempt.label}`)
     console.log(`[AliExpress] Body: ${body.toString()}`)
 
-    const res = await fetch(`${API_HOST}${attempt.path}`, {
+    const res = await fetch(`${API_HOST}/rest/auth/token/create`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body:    body.toString(),
@@ -76,7 +82,11 @@ async function tryTokenExchange(code: string) {
     try {
       const data = JSON.parse(rawText)
       if (data.access_token) return data
-      // continua em qualquer erro de assinatura
+      if (data.code && data.code !== 'IncompleteSignature') {
+        // Erro diferente de assinatura — não adianta tentar as outras variações
+        console.error(`[AliExpress] Erro não relacionado à assinatura: ${data.code} - ${data.message}`)
+        return null
+      }
     } catch {
       continue
     }
@@ -95,12 +105,11 @@ export async function GET(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.redirect(`${BASE_URL}/admin/login`)
 
-    const callbackUrl = `${BASE_URL}/api/aliexpress/oauth`
     const authUrl = new URL('https://auth.aliexpress.com/oauth/authorize')
     authUrl.searchParams.set('response_type', 'code')
-    authUrl.searchParams.set('force_auth', 'true')
-    authUrl.searchParams.set('redirect_uri', callbackUrl)
-    authUrl.searchParams.set('client_id', APP_KEY)
+    authUrl.searchParams.set('force_auth',    'true')
+    authUrl.searchParams.set('redirect_uri',  CALLBACK_URL)
+    authUrl.searchParams.set('client_id',     APP_KEY)
     return NextResponse.redirect(authUrl.toString())
   }
 
