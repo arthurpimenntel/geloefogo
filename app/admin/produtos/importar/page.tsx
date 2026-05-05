@@ -51,7 +51,7 @@ function ImportarProdutosContent() {
   }, [])
 
   const isCJ = suppliers.find(s => s.id === selectedSupplier)?.name?.toLowerCase().includes('cj') ?? false
-  const isAE = suppliers.find(s => s.id === selectedSupplier)?.name?.toLowerCase().includes('aliexpress') ?? false
+  const isAE = suppliers.find(s => s.id === selectedSupplier)?.name?.toLowerCase().includes('ali') ?? false
 
   // ── Shared supplier/markup panel ───────────────────────────────────────────
   const SupplierPanel = () => (
