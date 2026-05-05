@@ -2,68 +2,173 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 
-const AE_BASE = 'https://api-sg.aliexpress.com/sync'
-const APP_KEY = process.env.ALIEXPRESS_APP_KEY!
+const AE_BASE       = 'https://api-sg.aliexpress.com/sync'
+const APP_KEY       = process.env.ALIEXPRESS_APP_KEY!
+const APP_SECRET_ENV = process.env.ALIEXPRESS_APP_SECRET!
 
-// ─── Signature (HMAC-MD5 padrão AliExpress) ───────────────────────────────────
-function signRequest(params: Record<string, string>, appSecret: string): string {
-  const sorted = Object.keys(params).sort().map(k => `${k}${params[k]}`).join('')
+// ─── Signature ────────────────────────────────────────────────────────────────
+//
+// BUG ORIGINAL: usava createHmac('md5', secret) com mensagem "secret+params+secret"
+//   → mistura incorreta dos padrões hmac-md5 e md5; sign errado em 100% das chamadas.
+//
+// CORRETO para sign_method=md5 (TOP API AliExpress /sync):
+//   MD5( appSecret + sorted(key+value pairs) + appSecret ).toUpperCase()
+//
+function signRequest(
+  params: Record<string, string>,
+  appSecret: string,
+): string {
+  const sortedPairs = Object.keys(params)
+    .sort()
+    .map(k => `${k}${params[k]}`)
+    .join('')
+
+  // plain MD5 — NÃO é HMAC
   return crypto
-    .createHmac('md5', appSecret)
-    .update(`${appSecret}${sorted}${appSecret}`)
+    .createHash('md5')
+    .update(`${appSecret}${sortedPairs}${appSecret}`)
     .digest('hex')
     .toUpperCase()
 }
 
-function buildParams(method: string, accessToken: string, extra: Record<string, string>, appSecret: string) {
+function buildParams(
+  method: string,
+  accessToken: string,
+  extra: Record<string, string>,
+  appSecret: string,
+): Record<string, string> {
   const params: Record<string, string> = {
     method,
-    app_key: APP_KEY,
+    app_key:      APP_KEY,
     access_token: accessToken,
-    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-    sign_method: 'hmac-md5',
+    // Formato exigido pelo TOP: "YYYY-MM-DD HH:mm:ss"
+    timestamp:    new Date().toISOString().replace('T', ' ').substring(0, 19),
+    sign_method:  'md5',   // ← corrigido de 'hmac-md5'
     ...extra,
   }
   params.sign = signRequest(params, appSecret)
   return params
 }
 
-async function callAE(method: string, accessToken: string, extra: Record<string, string>, appSecret: string) {
+async function callAE(
+  method: string,
+  accessToken: string,
+  extra: Record<string, string>,
+  appSecret: string,
+) {
   const params = buildParams(method, accessToken, extra, appSecret)
-  const qs = new URLSearchParams(params).toString()
-  const res = await fetch(`${AE_BASE}?${qs}`)
-  return res.json()
+  const qs     = new URLSearchParams(params).toString()
+  const url    = `${AE_BASE}?${qs}`
+
+  const res  = await fetch(url)
+  const json = await res.json()
+
+  // Logging estruturado: detecta erro de API sem quebrar o caller
+  const topKey     = Object.keys(json)[0]
+  const respResult = json[topKey]?.resp_result
+  if (respResult && respResult.resp_code !== 200) {
+    console.error(
+      `[AE] API error | method=${method} | code=${respResult.resp_code} | msg=${respResult.resp_msg}`,
+    )
+  }
+
+  return json
 }
 
-// ─── Auth helpers ──────────────────────────────────────────────────────────────
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 async function authCheck(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autorizado', status: 401, supabase: null }
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
   const allowed = ['support', 'manager', 'super_admin']
-  if (!profile || !allowed.includes(profile.role)) return { error: 'Sem permissão', status: 403, supabase: null }
+  if (!profile || !allowed.includes(profile.role)) {
+    return { error: 'Sem permissão', status: 403, supabase: null }
+  }
   return { error: null, status: 200, supabase }
 }
 
 async function getAECredentials(supabase: any) {
-  const { data: supplier } = await supabase
+  // ── Passo 1: lê config da tabela suppliers ────────────────────────────────
+  //
+  // BUG ORIGINAL: .eq('active', true).single()
+  //   → single() lança exceção se 0 rows; active=null/false faz retornar 0 rows
+  //   → accessToken fica undefined mesmo com OAuth ok
+  //
+  // CORRIGIDO: maybeSingle() + sem filtro active (só precisamos do config)
+  //
+  const { data: supplier, error: supplierErr } = await supabase
     .from('suppliers')
-    .select('id, config')
+    .select('id, name, config, active')
     .ilike('name', '%ali%express%')
-    .eq('active', true)
-    .single()
+    .maybeSingle()
 
-  const appSecret    = supplier?.config?.app_secret    || process.env.ALIEXPRESS_APP_SECRET
-  const accessToken  = supplier?.config?.access_token
+  if (supplierErr) {
+    console.warn('[AE] suppliers query error:', supplierErr.message)
+  }
 
-  if (!appSecret)   throw new Error('AliExpress não configurado. Adicione ALIEXPRESS_APP_SECRET no .env ou configure o fornecedor.')
-  if (!accessToken) throw new Error('AliExpress não autorizado. Conecte sua conta na página de fornecedores.')
+  const appSecret   = supplier?.config?.app_secret   ?? APP_SECRET_ENV
+  let   accessToken = supplier?.config?.access_token  ?? null
+  let   tokenSource = 'suppliers.config'
 
-  return { appSecret, accessToken, supplierId: supplier?.id }
+  // ── Passo 2: fallback — tabela integrations ───────────────────────────────
+  //
+  // O OAuth route salva o token em DUAS tabelas (integrations + suppliers).
+  // Se o update de suppliers falhou, o token ainda existe em integrations.
+  //
+  if (!accessToken) {
+    const { data: integration, error: intErr } = await supabase
+      .from('integrations')
+      .select('access_token, expires_at')
+      .eq('provider', 'aliexpress')
+      .maybeSingle()
+
+    if (intErr) console.warn('[AE] integrations query error:', intErr.message)
+
+    accessToken  = integration?.access_token ?? null
+    tokenSource  = 'integrations'
+
+    // Sincroniza de volta para suppliers se encontrou
+    if (accessToken && supplier?.id) {
+      await supabase
+        .from('suppliers')
+        .update({
+          config: {
+            ...(supplier.config ?? {}),
+            access_token: accessToken,
+          },
+          active: true,
+        })
+        .eq('id', supplier.id)
+      console.log('[AE] Token sincronizado de integrations → suppliers')
+    }
+  }
+
+  console.log(
+    `[AE] credentials | tokenSource=${tokenSource} | hasToken=${!!accessToken} | hasSecret=${!!appSecret}`,
+  )
+
+  if (!appSecret) {
+    throw new Error(
+      'AliExpress não configurado. Adicione ALIEXPRESS_APP_SECRET no .env ou configure o fornecedor.',
+    )
+  }
+  if (!accessToken) {
+    throw new Error(
+      'AliExpress não autorizado. Conecte sua conta na página de fornecedores.',
+    )
+  }
+
+  return { appSecret, accessToken, supplierId: supplier?.id ?? null }
 }
 
-// ─── Normalize product ─────────────────────────────────────────────────────────
+// ─── Normalização ─────────────────────────────────────────────────────────────
 function normalizeProduct(p: any) {
   const price    = p.target_sale_price || p.sale_price || p.original_price || '0'
   const priceVal = parseFloat(String(price).replace(/[^0-9.]/g, '')) || 0
@@ -86,16 +191,17 @@ function normalizeProduct(p: any) {
   }
 }
 
+// ─── GET ──────────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
     const auth = await authCheck(req)
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
     const { appSecret, accessToken } = await getAECredentials(auth.supabase)
-    const { searchParams } = new URL(req.url)
-    const action = searchParams.get('action') || 'search'
+    const { searchParams }           = new URL(req.url)
+    const action                     = searchParams.get('action') || 'search'
 
-    // ── search ────────────────────────────────────────────────────────────────
+    // ── search ──────────────────────────────────────────────────────────────
     if (action === 'search') {
       const keyword    = searchParams.get('keyword') || 'trending'
       const page       = searchParams.get('page')    || '1'
@@ -111,16 +217,18 @@ export async function GET(req: NextRequest) {
         sort:            'SALE_PRICE_ASC',
         target_currency: 'USD',
         target_language: 'EN',
-        tracking_id:     'default',
+        // ATENÇÃO: 'default' é aceito pela assinatura mas pode retornar lista vazia
+        // dependendo das permissões da sua conta affiliate.
+        // Se continuar vazio, substitua pelo seu tracking_id real do portal AliExpress.
+        tracking_id: 'default',
       }
-      if (categoryId) extra.category_ids  = categoryId
-      if (minPrice)   extra.min_sale_price = minPrice
-      if (maxPrice)   extra.max_sale_price = maxPrice
+      if (categoryId) extra.category_ids   = categoryId
+      if (minPrice)   extra.min_sale_price  = minPrice
+      if (maxPrice)   extra.max_sale_price  = maxPrice
 
-      
-      const data  = await callAE('aliexpress.affiliate.product.query', accessToken, extra, appSecret)
-const resp  = data?.aliexpress_affiliate_product_query_response?.resp_result
-const products = resp?.result?.products?.product ?? []
+      const data     = await callAE('aliexpress.affiliate.product.query', accessToken, extra, appSecret)
+      const resp     = data?.aliexpress_affiliate_product_query_response?.resp_result
+      const products = resp?.result?.products?.product ?? []
 
       return NextResponse.json({
         result: true,
@@ -131,7 +239,7 @@ const products = resp?.result?.products?.product ?? []
       })
     }
 
-    // ── category-products ─────────────────────────────────────────────────────
+    // ── category-products ────────────────────────────────────────────────────
     if (action === 'category-products') {
       const categoryId   = searchParams.get('categoryId')   || ''
       const categoryName = searchParams.get('categoryName') || ''
@@ -149,9 +257,9 @@ const products = resp?.result?.products?.product ?? []
       }
       if (categoryId) extra.category_ids = categoryId
 
-     const data  = await callAE('aliexpress.affiliate.product.query', accessToken, extra, appSecret)
-const resp  = data?.aliexpress_affiliate_product_query_response?.resp_result
-const products = resp?.result?.products?.product ?? []
+      const data     = await callAE('aliexpress.affiliate.product.query', accessToken, extra, appSecret)
+      const resp     = data?.aliexpress_affiliate_product_query_response?.resp_result
+      const products = resp?.result?.products?.product ?? []
 
       return NextResponse.json({
         result: true,
@@ -162,20 +270,24 @@ const products = resp?.result?.products?.product ?? []
       })
     }
 
-    // ── categories ────────────────────────────────────────────────────────────
+    // ── categories ───────────────────────────────────────────────────────────
     if (action === 'categories') {
-      const data = await callAE('aliexpress.affiliate.category.get', accessToken, {
-        app_signature: '',
-      }, appSecret)
+      const data = await callAE(
+        'aliexpress.affiliate.category.get',
+        accessToken,
+        { app_signature: '' },
+        appSecret,
+      )
 
-      const cats = data?.aliexpress_affiliate_category_get_response?.resp_result?.result?.categories?.category ?? []
+      const cats = data
+        ?.aliexpress_affiliate_category_get_response
+        ?.resp_result?.result?.categories?.category ?? []
 
-      // Agrupa por categoria pai — estrutura compatível com o CategoryTree do painel
-      const parentMap: Record<string, any> = {}
+      const parentMap: Record<string, any>    = {}
       const childrenMap: Record<string, any[]> = {}
 
       for (const cat of cats) {
-        if (cat.parent_category_id === '0' || !cat.parent_category_id) {
+        if (!cat.parent_category_id || cat.parent_category_id === '0') {
           parentMap[String(cat.category_id)] = cat
         } else {
           const pid = String(cat.parent_category_id)
@@ -209,52 +321,105 @@ const products = resp?.result?.products?.product ?? []
       return NextResponse.json({ result: true, data: grouped })
     }
 
-    // ── sku / pid — busca por product_id ou URL ───────────────────────────────
+    // ── sku / pid ────────────────────────────────────────────────────────────
     if (action === 'sku' || action === 'pid') {
       const raw = searchParams.get('sku') || searchParams.get('pid') || ''
-      // Extrai ID numérico de URL AliExpress
       const idMatch =
         raw.match(/item\/(\d+)\.html/) ||
         raw.match(/[?&]id=(\d+)/)      ||
         (raw.match(/^\d+$/) ? [null, raw] : null)
       const productId = idMatch?.[1] || raw
 
-      if (!productId) return NextResponse.json({ error: 'SKU ou URL obrigatório' }, { status: 400 })
-
-      const data = await callAE('aliexpress.affiliate.productdetail.get', accessToken, {
-        product_ids:     productId,
-        target_currency: 'USD',
-        target_language: 'EN',
-        tracking_id:     'default',
-      }, appSecret)
-
-      const products = data?.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products?.product ?? []
-      if (products.length === 0) {
-        return NextResponse.json({ result: false, message: 'Produto não encontrado no AliExpress', data: null })
+      if (!productId) {
+        return NextResponse.json({ error: 'SKU ou URL obrigatório' }, { status: 400 })
       }
-      return NextResponse.json({ result: true, data: { product: normalizeProduct(products[0]) } })
+
+      const data = await callAE(
+        'aliexpress.affiliate.productdetail.get',
+        accessToken,
+        {
+          product_ids:     productId,
+          target_currency: 'USD',
+          target_language: 'EN',
+          tracking_id:     'default',
+        },
+        appSecret,
+      )
+
+      const products =
+        data?.aliexpress_affiliate_productdetail_get_response
+          ?.resp_result?.result?.products?.product ?? []
+
+      if (products.length === 0) {
+        return NextResponse.json({
+          result: false,
+          message: 'Produto não encontrado no AliExpress',
+          data: null,
+        })
+      }
+      return NextResponse.json({
+        result: true,
+        data: { product: normalizeProduct(products[0]) },
+      })
     }
 
-    // ── status ────────────────────────────────────────────────────────────────
+    // ── status ───────────────────────────────────────────────────────────────
     if (action === 'status') {
-      return NextResponse.json({ result: true, connected: true, message: 'AliExpress conectado.' })
+      // Faz uma chamada real para validar o token (não apenas verifica o banco)
+      try {
+        const data = await callAE(
+          'aliexpress.affiliate.product.query',
+          accessToken,
+          {
+            keywords:        'test',
+            page_no:         '1',
+            page_size:       '1',
+            target_currency: 'USD',
+            target_language: 'EN',
+            tracking_id:     'default',
+          },
+          appSecret,
+        )
+        const resp = data?.aliexpress_affiliate_product_query_response?.resp_result
+        const ok   = resp?.resp_code === 200
+        return NextResponse.json({
+          result:    true,
+          connected: ok,
+          api_code:  resp?.resp_code,
+          api_msg:   resp?.resp_msg,
+          message:   ok ? 'AliExpress conectado e respondendo.' : `API respondeu com código ${resp?.resp_code}: ${resp?.resp_msg}`,
+        })
+      } catch {
+        return NextResponse.json({ result: true, connected: true, message: 'Token presente (não validado).' })
+      }
     }
 
     return NextResponse.json({ error: 'Ação inválida' }, { status: 400 })
+
   } catch (err: any) {
-    const notConnected = err.message?.includes('não autorizado') || err.message?.includes('access_token')
-    return NextResponse.json({ error: err.message, notConnected }, { status: notConnected ? 401 : 500 })
+    const notConnected =
+      err.message?.includes('não autorizado') ||
+      err.message?.includes('access_token')
+    return NextResponse.json(
+      { error: err.message, notConnected },
+      { status: notConnected ? 401 : 500 },
+    )
   }
 }
 
-// ─── POST — Importa produto AliExpress para o catálogo ────────────────────────
+// ─── POST — importa produto para o catálogo ───────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
     const allowed = ['support', 'manager', 'super_admin']
     if (!profile || !allowed.includes(profile.role)) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
@@ -278,7 +443,7 @@ export async function POST(req: NextRequest) {
 
     const newProduct = {
       name:          product.nameEn,
-      slug:          (product.nameEn || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now(),
+      slug:          `${(product.nameEn || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${Date.now()}`,
       description:   product.nameEn,
       cost_price:    costBrl,
       sale_price:    saleBrl,
@@ -309,6 +474,7 @@ export async function POST(req: NextRequest) {
 
     if (err) throw err
     return NextResponse.json({ success: true, product: inserted })
+
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
