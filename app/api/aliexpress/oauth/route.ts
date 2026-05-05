@@ -1,98 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createHmac, createHash } from 'crypto'
+import { createHash } from 'crypto'
 
 const APP_KEY    = process.env.ALIEXPRESS_APP_KEY!
 const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET!
 const BASE_URL   = process.env.NEXT_PUBLIC_SITE_URL!
 const API_HOST   = 'https://api-sg.aliexpress.com'
-
 const CALLBACK_URL = `${BASE_URL}/api/aliexpress/oauth`
 
-// SHA256 HMAC sem path (padrão REST token)
-function signNoPath(params: Record<string, string>, secret: string): string {
+/**
+ * Assinatura para System Interfaces (ex: /auth/token/create)
+ * Formato: hex( sha256( apiPath + param1value1param2value2... ) )
+ * É plain SHA256, NÃO é HMAC. O secret NÃO é usado como chave.
+ * Ref: https://www.scribd.com/document/869829507/Aliexpress-Affiliate-Documentation-1
+ */
+function signSystemInterface(
+  apiPath: string,
+  params: Record<string, string>,
+): string {
   const sorted = Object.keys(params).sort()
-  const stringToSign = sorted.map(k => `${k}${params[k]}`).join('')
-  return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
-}
-
-// SHA256 HMAC com path
-function signRest(apiPath: string, params: Record<string, string>, secret: string): string {
-  const sorted = Object.keys(params).sort()
-  const stringToSign = apiPath + sorted.map(k => `${k}${params[k]}`).join('')
-  return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
-}
-
-// MD5 correto: secret + params + secret
-function signMD5(params: Record<string, string>, secret: string): string {
-  const sorted = Object.keys(params).sort()
-  const str = secret + sorted.map(k => `${k}${params[k]}`).join('') + secret
-  return createHash('md5').update(str, 'utf8').digest('hex').toUpperCase()
-}
-
-async function tryTokenExchange(code: string) {
-  const tsMs = String(Date.now())
-
-  // Campos base — grant_type e redirect_uri são OBRIGATÓRIOS
-  const baseParams = {
-    app_key:      APP_KEY,
-    code,
-    grant_type:   'authorization_code',   // ← FALTAVA ISSO
-    redirect_uri: CALLBACK_URL,           // ← E ISSO
-    timestamp:    tsMs,
-  }
-
-  const attempts = [
-    {
-      label:  'SHA256 sem path',
-      params: { ...baseParams, sign_method: 'sha256' },
-      signFn: (p: Record<string, string>) => signNoPath(p, APP_SECRET),
-    },
-    {
-      label:  'SHA256 com path',
-      params: { ...baseParams, sign_method: 'sha256' },
-      signFn: (p: Record<string, string>) =>
-        signRest('/rest/auth/token/create', p, APP_SECRET),
-    },
-    {
-      label:  'MD5 secret-wrap',
-      params: { ...baseParams, sign_method: 'md5' },
-      signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
-    },
-  ]
-
-  for (const attempt of attempts) {
-    const sign = attempt.signFn(attempt.params)
-    const body = new URLSearchParams({ ...attempt.params, sign })
-
-    console.log(`[AliExpress] Tentando: ${attempt.label}`)
-    console.log(`[AliExpress] Body: ${body.toString()}`)
-
-    const res = await fetch(`${API_HOST}/rest/auth/token/create`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:    body.toString(),
-    })
-
-    const rawText = await res.text()
-    console.log(`[AliExpress] Status: ${res.status} | Raw: ${rawText}`)
-
-    if (!rawText) continue
-
-    try {
-      const data = JSON.parse(rawText)
-      if (data.access_token) return data
-      if (data.code && data.code !== 'IncompleteSignature') {
-        // Erro diferente de assinatura — não adianta tentar as outras variações
-        console.error(`[AliExpress] Erro não relacionado à assinatura: ${data.code} - ${data.message}`)
-        return null
-      }
-    } catch {
-      continue
-    }
-  }
-
-  return null
+  // Concatena os params SEM separadores: "app_key123code3_xxx..."
+  const concatenated = sorted.map(k => `${k}${params[k]}`).join('')
+  // Prefixa com o path da API
+  const stringToSign = apiPath + concatenated
+  // Plain SHA256 (sem chave) — NÃO é HMAC
+  return createHash('sha256').update(stringToSign, 'utf8').digest('hex').toUpperCase()
 }
 
 export async function GET(req: NextRequest) {
@@ -116,21 +48,53 @@ export async function GET(req: NextRequest) {
   if (code) {
     const supabase = await createClient()
     try {
-      const tokenData = await tryTokenExchange(code)
+      // Apenas os 4 parâmetros que entram na assinatura (doc oficial)
+      const timestamp = String(Date.now())
+      const signParams: Record<string, string> = {
+        app_key:     APP_KEY,
+        code,
+        sign_method: 'sha256',
+        timestamp,
+      }
 
-      if (!tokenData?.access_token) {
-        console.error('[AliExpress] Nenhuma tentativa retornou access_token')
+      const sign = signSystemInterface('/auth/token/create', signParams)
+
+      // O body da requisição pode ter campos extras que NÃO entram na assinatura
+      const body = new URLSearchParams({
+        ...signParams,
+        sign,
+      })
+
+      console.log('[AliExpress] String assinada:', `/auth/token/create` +
+        Object.keys(signParams).sort().map(k => `${k}${signParams[k]}`).join('')
+      )
+      console.log('[AliExpress] Sign gerada:', sign)
+      console.log('[AliExpress] Body:', body.toString())
+
+      const res = await fetch(`${API_HOST}/rest/auth/token/create`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body.toString(),
+      })
+
+      const rawText = await res.text()
+      console.log('[AliExpress] Status:', res.status, '| Raw:', rawText)
+
+      const data = JSON.parse(rawText)
+
+      if (!data.access_token) {
+        console.error('[AliExpress] Sem access_token. Resposta:', rawText)
         return NextResponse.redirect(`${BASE_URL}/admin/fornecedores?ae_error=token_failed`)
       }
 
       await supabase.from('integrations').upsert({
         provider:      'aliexpress',
-        access_token:  tokenData.access_token,
-        refresh_token: tokenData.refresh_token ?? null,
-        expires_at:    tokenData.expire_time
-          ? new Date(Number(tokenData.expire_time)).toISOString()
+        access_token:  data.access_token,
+        refresh_token: data.refresh_token ?? null,
+        expires_at:    data.expire_time
+          ? new Date(Number(data.expire_time)).toISOString()
           : null,
-        account_id:    tokenData.account ?? null,
+        account_id:    data.account ?? null,
         updated_at:    new Date().toISOString(),
       }, { onConflict: 'provider' })
 
