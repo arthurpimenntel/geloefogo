@@ -132,38 +132,6 @@ async function getDestaqueProdutos(): Promise<Product[]> {
   }
 }
 
-// Styles inline para não depender do purge do Tailwind
-const sLojaSection: React.CSSProperties = { position: 'relative' }
-
-const sBgDesktop: React.CSSProperties = {
-  position: 'absolute',
-  top: 0, right: 0, bottom: 0, left: 0,
-  backgroundImage: 'url(/images/fotodesktop.jpg)',
-  backgroundAttachment: 'fixed',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  opacity: 0.22,
-}
-
-const sBgMobile: React.CSSProperties = {
-  position: 'absolute',
-  top: 0, right: 0, bottom: 0, left: 0,
-  backgroundImage: 'url(/images/fotomobile.jpg)',
-  backgroundAttachment: 'scroll',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  opacity: 0.22,
-}
-
-const sBgOverlay: React.CSSProperties = {
-  position: 'absolute',
-  top: 0, right: 0, bottom: 0, left: 0,
-  background: 'linear-gradient(to bottom, rgba(13,8,5,0.82) 0%, rgba(13,8,5,0.60) 50%, rgba(13,8,5,0.82) 100%)',
-  pointerEvents: 'none',
-}
-
-const sConteudo: React.CSSProperties = { position: 'relative', zIndex: 10 }
-
 export default async function HomePage() {
   const destaques = await getDestaqueProdutos()
 
@@ -171,20 +139,63 @@ export default async function HomePage() {
     <>
       <HeroSection />
 
-      {/* ── SEÇÃO DA LOJA COM FUNDO PARALLAX FIXO ── */}
-      <section style={sLojaSection}>
+      {/* ── SEÇÃO DA LOJA ── */}
+      <section style={{ position: 'relative', overflow: 'hidden' }}>
 
-        {/* Fundo desktop — oculto no mobile via Tailwind display */}
-        <div style={sBgDesktop} className="hidden md:block" />
+        {/* Imagem de fundo — desktop */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/fotodesktop.jpg"
+          alt=""
+          aria-hidden="true"
+          className="hidden md:block"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            opacity: 0.22,
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        />
 
-        {/* Fundo mobile — oculto no desktop via Tailwind display */}
-        <div style={sBgMobile} className="block md:hidden" />
+        {/* Imagem de fundo — mobile */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/fotomobile.jpg"
+          alt=""
+          aria-hidden="true"
+          className="block md:hidden"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            opacity: 0.22,
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        />
 
         {/* Overlay de contraste */}
-        <div style={sBgOverlay} />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'linear-gradient(to bottom, rgba(13,8,5,0.82) 0%, rgba(13,8,5,0.55) 50%, rgba(13,8,5,0.82) 100%)',
+            pointerEvents: 'none',
+          }}
+        />
 
-        {/* Conteúdo da seção */}
-        <div style={sConteudo} className="max-w-7xl mx-auto px-4 py-20">
+        {/* Conteúdo */}
+        <div style={{ position: 'relative', zIndex: 10 }} className="max-w-7xl mx-auto px-4 py-20">
           <div className="flex items-end justify-between mb-10">
             <div>
               <p className="text-amber-600 text-xs uppercase tracking-[0.2em] mb-2">Seleção da casa</p>
