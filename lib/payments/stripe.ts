@@ -1,17 +1,24 @@
 // lib/payments/stripe.ts
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10',
-})
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) return null
+  return new Stripe(key, {
+    apiVersion: '2026-04-22.basil' as any,
+  })
+}
 
 export async function createPaymentIntent(
   amount: number,
   orderId: string,
   customerEmail: string
 ): Promise<{ clientSecret: string; paymentIntentId: string }> {
+  const stripe = getStripe()
+  if (!stripe) throw new Error('Stripe não configurado')
+
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100), // BRL reais → centavos
+    amount: Math.round(amount * 100),
     currency: 'brl',
     metadata: { order_id: orderId },
     receipt_email: customerEmail,
@@ -31,6 +38,8 @@ export async function createPaymentIntent(
 export async function confirmPaymentIntent(
   paymentIntentId: string
 ): Promise<boolean> {
+  const stripe = getStripe()
+  if (!stripe) return false
   try {
     const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
     return pi.status === 'succeeded'
@@ -40,4 +49,4 @@ export async function confirmPaymentIntent(
   }
 }
 
-export { stripe }
+export const stripe = getStripe()
