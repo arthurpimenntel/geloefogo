@@ -23,7 +23,7 @@ const TEMPLATE_EXAMPLE = 'Cohiba Siglo VI,CUB-001,Cohiba,"O ápice da arte charu
 
 type Tab = 'catcode' | 'category' | 'sku' | 'csv'
 
-function ImportarProdutosPage() {
+function ImportarProdutosContent() {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const searchParams = useSearchParams()
