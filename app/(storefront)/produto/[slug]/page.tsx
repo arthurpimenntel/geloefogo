@@ -9,7 +9,7 @@ export const revalidate = 300
 export async function generateStaticParams() {
   const supabase = await createClient()
   const { data } = await supabase.from('products').select('slug').eq('active', true).is('deleted_at', null)
-  return (data ?? []).map(p => ({ slug: p.slug }))
+  return (data ?? []).map((p: any) => ({ slug: p.slug }))
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
