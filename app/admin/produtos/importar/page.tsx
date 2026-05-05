@@ -51,6 +51,7 @@ export default function ImportarProdutosPage() {
   }, [])
 
   const isCJ = suppliers.find(s => s.id === selectedSupplier)?.name?.toLowerCase().includes('cj') ?? false
+  const isAE = suppliers.find(s => s.id === selectedSupplier)?.name?.toLowerCase().includes('aliexpress') ?? false
 
   // ── Shared supplier/markup panel ───────────────────────────────────────────
   const SupplierPanel = () => (
@@ -66,7 +67,9 @@ export default function ImportarProdutosPage() {
           </select>
         )}
         <p className="text-amber-800 text-xs mt-2">
-          {isCJ ? '⚡ Integração direta via API CJDropshipping' : '📦 Importação via endpoint do fornecedor'}
+          {isCJ ? '⚡ Integração direta via API CJDropshipping'
+            : isAE ? '🛍️ Integração direta via API AliExpress Affiliate'
+            : '📦 Importação via endpoint do fornecedor'}
         </p>
       </div>
       <div className="bg-[#1A0F08] border border-amber-900/20 p-5">
@@ -93,14 +96,15 @@ export default function ImportarProdutosPage() {
 
   async function loadByCode() {
     const code = catCodeInput.trim()
-    if (!code) { setCatCodeError('Digite o código da categoria CJ.'); return }
+    if (!code) { setCatCodeError(`Digite o código da categoria ${isCJ ? 'CJ' : 'AliExpress'}.`); return }
     const qty = Math.min(Math.max(parseInt(catCodeQty) || 20, 1), 100)
     setCatCodeLoading(true); setCatCodeError(null); setCatCodeProducts([]); setCatCodeSelected(new Set()); setCatCodeResults([])
     try {
-      const res  = await fetch(`/api/cj?action=category-products&categoryId=${encodeURIComponent(code)}&page=1&size=${qty}`)
+      const api = isCJ ? 'cj' : isAE ? 'aliexpress' : 'cj'
+      const res  = await fetch(`/api/${api}?action=category-products&categoryId=${encodeURIComponent(code)}&page=1&size=${qty}`)
       const data = await res.json()
       const list: CJProduct[] = data?.data?.list ?? []
-      if (!data.result) { setCatCodeError(data.message || 'Categoria não encontrada ou sem produtos.'); }
+      if (!data.result && !list.length) { setCatCodeError(data.message || 'Categoria não encontrada ou sem produtos.') }
       else if (list.length === 0) { setCatCodeError('Nenhum produto encontrado nesta categoria.') }
       else { setCatCodeProducts(list) }
     } catch { setCatCodeError('Erro de rede.') }
@@ -122,9 +126,10 @@ export default function ImportarProdutosPage() {
     if (!toImport.length) return
     setCatCodeImporting(true); setCatCodeResults([])
     const results: typeof catCodeResults = []
+    const api = isCJ ? 'cj' : 'aliexpress'
     for (const product of toImport) {
       try {
-        const res  = await fetch('/api/cj', {
+        const res  = await fetch(`/api/${api}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product, markup_pct: parseFloat(markupPct) || 40, supplier_id: selectedSupplier }),
@@ -160,10 +165,11 @@ export default function ImportarProdutosPage() {
 
   function loadCategories() {
     setCatLoading(true); setCatError(null)
-    fetch('/api/cj?action=categories')
+    const api = isCJ ? 'cj' : isAE ? 'aliexpress' : 'cj'
+    fetch(`/api/${api}?action=categories`)
       .then(r => r.json())
       .then(d => {
-        if (d.result && Array.isArray(d.data)) setCategories(d.data)
+        if ((d.result || Array.isArray(d.data)) && Array.isArray(d.data)) setCategories(d.data)
         else setCatError(d.message || d.error || 'Erro ao carregar categorias')
       })
       .catch(() => setCatError('Erro de rede'))
@@ -172,10 +178,17 @@ export default function ImportarProdutosPage() {
 
   useEffect(() => {
     if (activeTab === 'category' && categories.length === 0) loadCategories()
-  }, [activeTab])
+  }, [activeTab, selectedSupplier])
+
+  useEffect(() => {
+    setCategories([])
+    setSelectedCat(null)
+    setCatProducts([])
+  }, [selectedSupplier])
 
   function loadCategoryProducts(catId: string, catName: string, page = 1) {
     setCatProductsLoading(true)
+    const api = isCJ ? 'cj' : isAE ? 'aliexpress' : 'cj'
     const params = new URLSearchParams({
       action: 'category-products',
       categoryId: catId,
@@ -183,7 +196,7 @@ export default function ImportarProdutosPage() {
       page: String(page),
       size: '20',
     })
-    fetch(`/api/cj?${params}`)
+    fetch(`/api/${api}?${params}`)
       .then(r => r.json())
       .then(d => {
         const list = d?.data?.list ?? []
@@ -192,11 +205,7 @@ export default function ImportarProdutosPage() {
         setCatProductsPage(page)
         setSelectedProducts(new Set())
         setImportResults([])
-        if (list.length === 0 && d?._debug?.message) {
-          setCatDebugMsg(d._debug.message)
-        } else {
-          setCatDebugMsg(null)
-        }
+        setCatDebugMsg(list.length === 0 && d?.message ? d.message : null)
       })
       .catch(() => {})
       .finally(() => setCatProductsLoading(false))
@@ -219,9 +228,10 @@ export default function ImportarProdutosPage() {
     if (!toImport.length) return
     setImporting(true); setImportResults([])
     const results: typeof importResults = []
+    const api = isCJ ? 'cj' : 'aliexpress'
     for (const product of toImport) {
       try {
-        const res  = await fetch('/api/cj', {
+        const res  = await fetch(`/api/${api}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product, markup_pct: parseFloat(markupPct) || 40, supplier_id: selectedSupplier }),
@@ -272,29 +282,28 @@ export default function ImportarProdutosPage() {
         if (isCJ) {
           const isUrl  = sku.startsWith('http')
           const isUuid = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(sku)
-          let skuData: any
-          if (isUrl || isUuid) {
-            skuData = await fetch(`/api/cj?action=pid&pid=${encodeURIComponent(sku)}`).then(r => r.json())
-          } else {
-            skuData = await fetch(`/api/cj?action=sku&sku=${encodeURIComponent(sku)}`).then(r => r.json())
-          }
+          const skuData = await fetch(`/api/cj?action=${isUrl || isUuid ? 'pid' : 'sku'}&${isUrl || isUuid ? 'pid' : 'sku'}=${encodeURIComponent(sku)}`).then(r => r.json())
           if (!skuData.result || !skuData.data?.product) {
             setSkuResults(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'error', message: skuData.message ?? 'Não encontrado' } : r))
             continue
           }
-          res  = await fetch('/api/cj', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ product: skuData.data.product, markup_pct: parseFloat(markupPct) || 40, supplier_id: selectedSupplier }),
-          })
+          res  = await fetch('/api/cj', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ product: skuData.data.product, markup_pct: parseFloat(markupPct) || 40, supplier_id: selectedSupplier }) })
+          data = await res.json()
+        } else if (isAE) {
+          const isUrl       = sku.startsWith('http')
+          const isNumericId = /^\d{10,}$/.test(sku)
+          const skuData = await fetch(`/api/aliexpress?action=${isUrl || isNumericId ? 'pid' : 'sku'}&${isUrl || isNumericId ? 'pid' : 'sku'}=${encodeURIComponent(sku)}`).then(r => r.json())
+          if (skuData.error || !skuData.data?.product) {
+            setSkuResults(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'error', message: skuData.error ?? skuData.message ?? 'Não encontrado' } : r))
+            continue
+          }
+          res  = await fetch('/api/aliexpress', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ product: skuData.data.product, markup_pct: parseFloat(markupPct) || 40, supplier_id: selectedSupplier }) })
           data = await res.json()
         } else {
-          res  = await fetch('/api/admin/produtos/import', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ skus: [sku], supplier_id: selectedSupplier, markup_pct: parseFloat(markupPct) || 40, mode: 'sku' }),
-          })
+          res  = await fetch('/api/admin/produtos/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ skus: [sku], supplier_id: selectedSupplier, markup_pct: parseFloat(markupPct) || 40, mode: 'sku' }) })
           data = await res.json()
         }
-        if (!res.ok || data.error) {
+        if (!res!.ok || data.error) {
           setSkuResults(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'error', message: data.error ?? 'Erro' } : r))
         } else {
           setSkuResults(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'success', productName: data.product?.name ?? sku } : r))
@@ -321,7 +330,7 @@ export default function ImportarProdutosPage() {
         const text  = ev.target?.result as string
         const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
         if (lines.length < 2) throw new Error('Arquivo vazio ou sem dados.')
-        const hdrs   = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
+        const hdrs    = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
         const missing = REQUIRED_COLS.filter(c => !hdrs.includes(c))
         if (missing.length > 0) throw new Error(`Colunas obrigatórias ausentes: ${missing.join(', ')}`)
         const rows: ParsedProduct[] = lines.slice(1).map(line => {
@@ -369,8 +378,7 @@ export default function ImportarProdutosPage() {
     onToggle: (id: string) => void; onToggleAll: () => void
     onImport: () => void; importing: boolean
     results: { name: string; status: 'success'|'error'; message?: string }[]
-    loading?: boolean
-    debugMsg?: string | null
+    loading?: boolean; debugMsg?: string | null
   }) {
     if (loading) return <div className="bg-[#1A0F08] border border-amber-900/20 p-12 text-center text-amber-700 text-sm animate-pulse">Carregando produtos...</div>
     return (
@@ -406,17 +414,7 @@ export default function ImportarProdutosPage() {
             )}
           </div>
           {products.length === 0 ? (
-            debugMsg ? (
-              <div className="p-8 text-center space-y-3">
-                <p className="text-amber-700 text-xs">⚠️ {debugMsg}</p>
-                <p className="text-amber-800 text-[11px] leading-relaxed">
-                  Use a aba <strong className="text-amber-600">Código de Categoria</strong> e insira o ID numérico
-                  encontrado na URL do site CJDropshipping ao navegar pela categoria desejada.
-                </p>
-              </div>
-            ) : (
-              <p className="text-amber-800 text-xs p-8 text-center">Nenhum produto encontrado</p>
-            )
+            <p className="text-amber-800 text-xs p-8 text-center">{debugMsg || 'Nenhum produto encontrado'}</p>
           ) : (
             products.map(p => (
               <div key={p.id} onClick={() => onToggle(p.id)}
@@ -444,6 +442,18 @@ export default function ImportarProdutosPage() {
     )
   }
 
+  const skuPlaceholder = isCJ
+    ? 'CJNSSYWY01847\nhttps://cjdropshipping.com/product/detail.html?id=04A22450-...\n04A22450-67F0-4617-A132-E7AE7F8963B0'
+    : isAE
+    ? 'https://www.aliexpress.com/item/1005006123456789.html\n1005006123456789'
+    : 'SKU-001\nSKU-002'
+
+  const skuHelp = isCJ
+    ? 'Aceita: SKU (ex: CJNSSYWY...), UUID ou URL da CJ'
+    : isAE
+    ? 'Aceita: URL do produto AliExpress ou ID numérico (ex: 1005006123456789)'
+    : 'Um SKU por linha'
+
   return (
     <div className="max-w-5xl">
       {/* Header */}
@@ -451,7 +461,7 @@ export default function ImportarProdutosPage() {
         <button onClick={() => router.back()} className="text-amber-700 hover:text-amber-400 text-xs uppercase tracking-widest transition-colors">← Voltar</button>
         <div>
           <h1 className="font-playfair text-2xl text-amber-100">Importar Produtos</h1>
-          <p className="text-amber-700 text-xs mt-0.5">Via código de categoria, árvore CJ, SKU ou CSV</p>
+          <p className="text-amber-700 text-xs mt-0.5">Via código de categoria, árvore de categorias, SKU ou CSV</p>
         </div>
       </div>
 
@@ -476,9 +486,10 @@ export default function ImportarProdutosPage() {
       {activeTab === 'catcode' && (
         <div>
           <SupplierPanel />
-
           <div className="bg-[#1A0F08] border border-amber-900/20 p-5 mb-6">
-            <p className="text-amber-400 text-xs uppercase tracking-widest mb-4">Buscar por Código de Categoria CJ</p>
+            <p className="text-amber-400 text-xs uppercase tracking-widest mb-4">
+              Buscar por Código de Categoria {isCJ ? 'CJ' : isAE ? 'AliExpress' : ''}
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div className="md:col-span-2">
                 <label className="text-amber-700 text-xs block mb-1.5">Código da categoria</label>
@@ -486,61 +497,46 @@ export default function ImportarProdutosPage() {
                   value={catCodeInput}
                   onChange={e => setCatCodeInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && loadByCode()}
-                  placeholder="Ex: 3228"
+                  placeholder={isCJ ? 'Ex: 3228' : isAE ? 'Ex: 200001126' : 'Código da categoria'}
                   className="w-full bg-[#0D0805] border border-amber-900/30 text-amber-200 text-sm font-mono px-3 py-2.5 focus:outline-none focus:border-amber-700 transition-colors placeholder:text-amber-900"
                 />
               </div>
               <div>
-                <label className="text-amber-700 text-xs block mb-1.5">Qtd. máxima de produtos</label>
-                <input
-                  type="number" min="1" max="100"
-                  value={catCodeQty}
-                  onChange={e => setCatCodeQty(e.target.value)}
-                  className="w-full bg-[#0D0805] border border-amber-900/30 text-amber-200 text-sm px-3 py-2.5 focus:outline-none focus:border-amber-700 transition-colors [appearance:textfield]"
-                />
+                <label className="text-amber-700 text-xs block mb-1.5">Qtd. máxima</label>
+                <input type="number" min="1" max="100" value={catCodeQty} onChange={e => setCatCodeQty(e.target.value)}
+                  className="w-full bg-[#0D0805] border border-amber-900/30 text-amber-200 text-sm px-3 py-2.5 focus:outline-none focus:border-amber-700 transition-colors [appearance:textfield]" />
               </div>
             </div>
             <div className="flex items-center justify-between">
               <p className="text-amber-800 text-xs">
-                Encontre o código na URL da categoria no site da CJDropshipping
+                {isCJ ? 'Encontre o código na URL da categoria em cjdropshipping.com'
+                  : isAE ? 'Encontre o ID na URL da categoria em aliexpress.com'
+                  : 'Informe o código da categoria do fornecedor'}
               </p>
-              <button
-                onClick={loadByCode}
-                disabled={catCodeLoading}
-                className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-[#0D0805] text-xs font-bold uppercase tracking-widest transition-colors"
-              >
+              <button onClick={loadByCode} disabled={catCodeLoading}
+                className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-[#0D0805] text-xs font-bold uppercase tracking-widest transition-colors">
                 {catCodeLoading ? 'Buscando...' : '🔍 Buscar'}
               </button>
             </div>
           </div>
-
-          {catCodeError && (
-            <div className="bg-red-900/20 border border-red-700/40 px-5 py-3 text-red-300 text-sm mb-6">❌ {catCodeError}</div>
-          )}
-
+          {catCodeError && <div className="bg-red-900/20 border border-red-700/40 px-5 py-3 text-red-300 text-sm mb-6">❌ {catCodeError}</div>}
           {catCodeProducts.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-amber-400 text-sm">
-                  {catCodeProducts.length} produto{catCodeProducts.length !== 1 ? 's' : ''} encontrado{catCodeProducts.length !== 1 ? 's' : ''}
-                  <span className="text-amber-800 text-xs ml-2">· código {catCodeInput}</span>
-                </p>
-              </div>
+              <p className="text-amber-400 text-sm mb-4">
+                {catCodeProducts.length} produto{catCodeProducts.length !== 1 ? 's' : ''} encontrado{catCodeProducts.length !== 1 ? 's' : ''}
+                <span className="text-amber-800 text-xs ml-2">· código {catCodeInput}</span>
+              </p>
               <ProductGrid
-                products={catCodeProducts}
-                selected={catCodeSelected}
-                onToggle={toggleCatCode}
-                onToggleAll={toggleAllCatCode}
-                onImport={importCatCodeSelected}
-                importing={catCodeImporting}
-                results={catCodeResults}
+                products={catCodeProducts} selected={catCodeSelected}
+                onToggle={toggleCatCode} onToggleAll={toggleAllCatCode}
+                onImport={importCatCodeSelected} importing={catCodeImporting} results={catCodeResults}
               />
             </div>
           )}
         </div>
       )}
 
-      {/* ── CATEGORY TAB ────────────────────────────────────────────────────── */}
+      {/* ── CATEGORY TAB ───────────────────────────────────────────────────── */}
       {activeTab === 'category' && (
         <div>
           <SupplierPanel />
@@ -550,7 +546,7 @@ export default function ImportarProdutosPage() {
               <button onClick={loadCategories} className="text-amber-500 text-xs uppercase tracking-widest hover:text-amber-300">Tentar novamente</button>
             </div>
           )}
-          {catLoading && <div className="text-amber-700 text-sm animate-pulse text-center py-12">Carregando categorias da CJ...</div>}
+          {catLoading && <div className="text-amber-700 text-sm animate-pulse text-center py-12">Carregando categorias{isAE ? ' AliExpress' : ' CJ'}...</div>}
           {!catLoading && !catError && categories.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
@@ -612,7 +608,7 @@ export default function ImportarProdutosPage() {
                 {!selectedCat ? (
                   <div className="bg-[#1A0F08] border border-amber-900/20 p-12 text-center">
                     <div className="text-3xl mb-3">🗂</div>
-                    <p className="text-amber-700 text-sm">Selecione uma categoria à esquerda para ver os produtos</p>
+                    <p className="text-amber-700 text-sm">Selecione uma categoria à esquerda</p>
                   </div>
                 ) : (
                   <div>
@@ -633,15 +629,10 @@ export default function ImportarProdutosPage() {
                       </div>
                     </div>
                     <ProductGrid
-                      products={catProducts}
-                      selected={selectedProducts}
-                      onToggle={toggleProduct}
-                      onToggleAll={toggleAll}
-                      onImport={importSelected}
-                      importing={importing}
-                      results={importResults}
-                      loading={catProductsLoading}
-                      debugMsg={catDebugMsg}
+                      products={catProducts} selected={selectedProducts}
+                      onToggle={toggleProduct} onToggleAll={toggleAll}
+                      onImport={importSelected} importing={importing} results={importResults}
+                      loading={catProductsLoading} debugMsg={catDebugMsg}
                     />
                   </div>
                 )}
@@ -656,11 +647,13 @@ export default function ImportarProdutosPage() {
         <div>
           <SupplierPanel />
           <div className="bg-[#1A0F08] border border-amber-900/20 p-5 mb-6">
-            <label className="text-amber-400 text-xs uppercase tracking-widest block mb-3">SKU, UUID ou URL da CJ — um por linha</label>
+            <label className="text-amber-400 text-xs uppercase tracking-widest block mb-3">
+              {isCJ ? 'SKU, UUID ou URL da CJ' : isAE ? 'URL ou ID do AliExpress' : 'SKU'} — um por linha
+            </label>
             <textarea value={skuInput} onChange={e => { setSkuInput(e.target.value); setSkuResults([]); setSkuError(null) }}
-              placeholder={'CJNSSYWY01847\nhttps://cjdropshipping.com/product/detail.html?id=04A22450-...\n04A22450-67F0-4617-A132-E7AE7F8963B0'}
-              rows={6}
+              placeholder={skuPlaceholder} rows={6}
               className="w-full bg-[#0D0805] border border-amber-900/30 text-amber-200 text-sm font-mono px-3 py-2.5 focus:outline-none focus:border-amber-700 transition-colors resize-none placeholder:text-amber-900" />
+            <p className="text-amber-800 text-[11px] mt-2">{skuHelp}</p>
             <div className="flex items-center justify-between mt-4">
               <span className="text-amber-800 text-xs">{skuCount > 0 ? `${skuCount} item${skuCount > 1 ? 's' : ''} detectado${skuCount > 1 ? 's' : ''}` : 'Nenhum item inserido'}</span>
               <button onClick={handleSkuImport} disabled={skuImporting || skuCount === 0 || !selectedSupplier}
@@ -724,9 +717,7 @@ export default function ImportarProdutosPage() {
             <div className={`border px-5 py-4 mb-6 ${csvResult.added > 0 ? 'bg-green-900/20 border-green-700/40' : 'bg-amber-900/20 border-amber-700/40'}`}>
               <p className="text-green-300 text-sm font-medium">✅ {csvResult.added} produtos importados com sucesso!</p>
               {csvResult.errors.length > 0 && (
-                <ul className="mt-3 space-y-1">
-                  {csvResult.errors.slice(0, 10).map((e, i) => <li key={i} className="text-amber-700 text-xs">{e}</li>)}
-                </ul>
+                <ul className="mt-3 space-y-1">{csvResult.errors.slice(0,10).map((e, i) => <li key={i} className="text-amber-700 text-xs">{e}</li>)}</ul>
               )}
             </div>
           )}
@@ -743,7 +734,7 @@ export default function ImportarProdutosPage() {
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-[#1A0F08]">
                     <tr className="border-b border-amber-900/20">
-                      {['Nome', 'SKU', 'Marca', 'Preço', 'Estoque', 'Tags'].map(h => (
+                      {['Nome','SKU','Marca','Preço','Estoque','Tags'].map(h => (
                         <th key={h} className="text-left py-3 px-4 text-amber-700 uppercase tracking-widest font-normal">{h}</th>
                       ))}
                     </tr>
@@ -753,10 +744,10 @@ export default function ImportarProdutosPage() {
                       <tr key={i} className="border-b border-amber-900/10 hover:bg-amber-900/10">
                         <td className="py-2.5 px-4 text-amber-200">{p.name}</td>
                         <td className="py-2.5 px-4 text-amber-700 font-mono">{p.sku}</td>
-                        <td className="py-2.5 px-4 text-amber-600">{p.brand || '—'}</td>
-                        <td className="py-2.5 px-4 text-amber-400">{parseFloat(p.sale_price || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        <td className="py-2.5 px-4 text-amber-500">{p.stock || '0'}</td>
-                        <td className="py-2.5 px-4 text-amber-700">{p.tags || '—'}</td>
+                        <td className="py-2.5 px-4 text-amber-600">{p.brand||'—'}</td>
+                        <td className="py-2.5 px-4 text-amber-400">{parseFloat(p.sale_price||'0').toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td>
+                        <td className="py-2.5 px-4 text-amber-500">{p.stock||'0'}</td>
+                        <td className="py-2.5 px-4 text-amber-700">{p.tags||'—'}</td>
                       </tr>
                     ))}
                   </tbody>

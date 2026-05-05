@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['ftp2'],
-  turbopack: {},   // ← objeto vazio (não false)
+  serverExternalPackages: ['ftp2', 'socksv5'],
+  turbopack: {},
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.resolve.fallback = {
@@ -10,11 +10,19 @@ const nextConfig: NextConfig = {
         net: false,
         tls: false,
         dns: false,
-        fs: false
+        fs: false,
       };
     }
     return config;
   },
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.cjdropshipping.com' },
+      { protocol: 'https', hostname: '**.aliexpress.com' },
+      { protocol: 'https', hostname: '**.alicdn.com' },
+    ],
+  },
+  allowedDevOrigins: ['deliver-submit-head-ago.trycloudflare.com'],
 };
 
 export default nextConfig;

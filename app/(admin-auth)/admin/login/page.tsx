@@ -1,12 +1,12 @@
 // app/(admin)/admin/login/page.tsx
 'use client'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/admin'
@@ -24,7 +24,6 @@ export default function AdminLoginPage() {
     setError(null)
     
     try {
-      // 1. Faz login
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -32,23 +31,20 @@ export default function AdminLoginPage() {
       
       if (signInError) throw signInError
       
-      // 2. Verifica se o usuário tem role de admin
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single<{ role: string }>()   // ← tipagem explícita resolve o 'never'
+        .single<{ role: string }>()
 
       if (profileError) throw new Error('Erro ao verificar permissões')
       
       const adminRoles = ['support', 'manager', 'super_admin']
       if (!adminRoles.includes(profile?.role || '')) {
-        // Não é admin, faz logout
         await supabase.auth.signOut()
         throw new Error('Acesso negado. Você não tem permissão de administrador.')
       }
       
-      // 3. Redireciona para o admin
       router.push(next)
       router.refresh()
       
@@ -67,7 +63,6 @@ export default function AdminLoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        {/* Logo */}
         <div className="text-center mb-10">
           <Link href="/">
             <p className="font-playfair text-amber-300 text-2xl tracking-[0.1em]">
@@ -153,5 +148,17 @@ export default function AdminLoginPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0805]">
+        <p className="text-amber-700 text-xs uppercase tracking-widest">Carregando...</p>
+      </div>
+    }>
+      <AdminLoginForm />
+    </Suspense>
   )
 }

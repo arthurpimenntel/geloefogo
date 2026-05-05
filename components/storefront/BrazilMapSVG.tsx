@@ -2,8 +2,7 @@
 'use client'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { ComposableMap, Geographies, Geography } from '@vnedyalk0v/react19-simple-maps'
-
-const GEO_URL = 'https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/brazil-states.geojson'
+import geoData from '@/lib/brazil-states.json'
 
 const REGION_MAP: Record<string, string> = {
   AC: 'norte', AM: 'norte', AP: 'norte', PA: 'norte',
@@ -34,25 +33,24 @@ const REGION_COLORS: Record<string, string> = {
 export function BrazilMapSVG() {
   const [hovered, setHovered] = useState<string | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  
+
   const handleMouseEnter = useCallback((region: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     setHovered(region)
   }, [])
-  
+
   const handleMouseLeave = useCallback(() => {
     timeoutRef.current = setTimeout(() => setHovered(null), 50)
   }, [])
-  
+
   useEffect(() => {
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }
   }, [])
-  
+
   const info = hovered ? REGION_INFO[hovered] : null
 
   return (
     <div className="flex flex-col items-center gap-4 w-full h-full">
-      {/* Container ocupa 100% da largura do pai sem maxWidth restritivo */}
       <div style={{ width: '100%', height: '100%', minHeight: '600px' }}>
         <ComposableMap
           projection="geoMercator"
@@ -61,13 +59,13 @@ export function BrazilMapSVG() {
           height={680}
           style={{ width: '100%', height: '100%' }}
         >
-          <Geographies geography={GEO_URL}>
+          <Geographies geography={geoData}>
             {({ geographies }) =>
               geographies.map(geo => {
                 const uf = geo.properties.sigla ?? geo.properties.UF_05 ?? geo.properties.SIGLA ?? ''
                 const region = REGION_MAP[uf] ?? 'norte'
                 const isHovered = hovered === region
-                
+
                 return (
                   <Geography
                     key={geo.rsmKey}
