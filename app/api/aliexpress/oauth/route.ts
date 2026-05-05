@@ -5,21 +5,82 @@ import { createHmac, createHash } from 'crypto'
 const APP_KEY    = process.env.ALIEXPRESS_APP_KEY!
 const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET!
 const BASE_URL   = process.env.NEXT_PUBLIC_SITE_URL!
-const API_HOST = 'https://api-sg.aliexpress.com'
-const API_PATH = '/auth/token/create'  
+const API_HOST   = 'https://api-sg.aliexpress.com'
 
-// IOP SDK REST — para chamadas normais de API
 function signRest(apiPath: string, params: Record<string, string>, secret: string): string {
   const sorted = Object.keys(params).sort()
   const stringToSign = apiPath + sorted.map(k => `${k}${params[k]}`).join('')
   return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
 }
 
-// TOP API legado — para endpoints de auth/token
 function signMD5(params: Record<string, string>, secret: string): string {
   const sorted = Object.keys(params).sort()
   const str = secret + sorted.map(k => `${k}${params[k]}`).join('') + secret
   return createHash('md5').update(str, 'utf8').digest('hex').toUpperCase()
+}
+
+async function tryTokenExchange(code: string, timestamp: string) {
+  // Todas as combinações possíveis para descobrir qual o AliExpress aceita
+  const attempts = [
+    {
+      label: 'SHA256 /rest/auth/token/create',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp },
+      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
+    },
+    {
+      label: 'SHA256 /auth/token/create',
+      path: '/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp },
+      signFn: (p: Record<string, string>) => signRest('/auth/token/create', p, APP_SECRET),
+    },
+    {
+      label: 'MD5 /rest/auth/token/create',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp },
+      signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
+    },
+    {
+      label: 'MD5 /auth/token/create',
+      path: '/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp },
+      signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
+    },
+  ]
+
+  for (const attempt of attempts) {
+    const sign = attempt.signFn(attempt.params)
+    const body = new URLSearchParams({ ...attempt.params, sign })
+
+    console.log(`[AliExpress] Tentando: ${attempt.label}`)
+    console.log(`[AliExpress] Body:`, body.toString())
+
+    const res = await fetch(`${API_HOST}${attempt.path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    })
+
+    const rawText = await res.text()
+    console.log(`[AliExpress] Status: ${res.status}`)
+    console.log(`[AliExpress] Raw response: ${rawText}`)
+
+    if (!rawText) {
+      console.log(`[AliExpress] Resposta vazia — pulando`)
+      continue
+    }
+
+    try {
+      const data = JSON.parse(rawText)
+      console.log(`[AliExpress] Parsed:`, JSON.stringify(data, null, 2))
+      if (data.access_token) return data
+      if (data.code !== 'IncompleteSignature') return data // outro erro, para aqui
+    } catch {
+      console.log(`[AliExpress] Não é JSON válido`)
+    }
+  }
+
+  return null
 }
 
 export async function GET(req: NextRequest) {
@@ -45,35 +106,10 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient()
     try {
       const timestamp = String(Date.now())
+      const tokenData = await tryTokenExchange(code, timestamp)
 
-      // Tenta MD5 (TOP API legado) primeiro
-      const paramsToSign: Record<string, string> = {
-        app_key:     APP_KEY,
-        code,
-        sign_method: 'sha256',
-        timestamp,
-      }
-
-      const sign = signMD5(paramsToSign, APP_SECRET)
-
-      const debugStr = APP_SECRET + Object.keys(paramsToSign).sort()
-        .map(k => `${k}${paramsToSign[k]}`).join('') + APP_SECRET
-      console.log('[AliExpress] method: MD5 TOP-style')
-      console.log('[AliExpress] stringToSign:', debugStr)
-      console.log('[AliExpress] sign:', sign)
-
-      const body = new URLSearchParams({ ...paramsToSign, sign })
-
-      const tokenRes = await fetch(`${API_HOST}${API_PATH}`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body:    body.toString(),
-      })
-
-      const tokenData = await tokenRes.json()
-      console.log('[AliExpress] tokenData:', JSON.stringify(tokenData, null, 2))
-
-      if (!tokenData.access_token) {
+      if (!tokenData?.access_token) {
+        console.error('[AliExpress] Nenhuma tentativa retornou access_token')
         return NextResponse.redirect(`${BASE_URL}/admin/fornecedores?ae_error=token_failed`)
       }
 
