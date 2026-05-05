@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
         updated_at:    new Date().toISOString(),
       }, { onConflict: 'provider' })
 
-      await (supabase
+      const { error: supplierError } = await (supabase
   .from('suppliers') as any)
   .update({
     config: {
@@ -108,6 +108,8 @@ export async function GET(req: NextRequest) {
     active: true,
   })
   .eq('name', 'Ali Express')
+
+console.log('[AliExpress] Supplier update error:', supplierError)
 
       return NextResponse.redirect(`${BASE_URL}/admin/fornecedores?ae_connected=1`)
     } catch (err) {
