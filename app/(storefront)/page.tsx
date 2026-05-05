@@ -142,7 +142,7 @@ export default async function HomePage() {
       {/* ── SEÇÃO DA LOJA ── */}
       <section style={{ position: 'relative', overflow: 'hidden' }}>
 
-        {/* Imagem de fundo — desktop */}
+        {/* Imagem de fundo desktop — position absolute com top/bottom/left/right: 0 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/fotodesktop.jpg"
@@ -153,17 +153,19 @@ export default async function HomePage() {
             position: 'absolute',
             top: 0,
             left: 0,
+            right: 0,
+            bottom: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center',
-            opacity: 0.22,
+            opacity: 0.25,
             pointerEvents: 'none',
-            userSelect: 'none',
+            zIndex: 0,
           }}
         />
 
-        {/* Imagem de fundo — mobile */}
+        {/* Imagem de fundo mobile */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/images/fotomobile.jpg"
@@ -174,28 +176,31 @@ export default async function HomePage() {
             position: 'absolute',
             top: 0,
             left: 0,
+            right: 0,
+            bottom: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center',
-            opacity: 0.22,
+            opacity: 0.25,
             pointerEvents: 'none',
-            userSelect: 'none',
+            zIndex: 0,
           }}
         />
 
-        {/* Overlay de contraste */}
+        {/* Overlay escuro para contraste */}
         <div
           style={{
             position: 'absolute',
             top: 0, left: 0, right: 0, bottom: 0,
-            background: 'linear-gradient(to bottom, rgba(13,8,5,0.82) 0%, rgba(13,8,5,0.55) 50%, rgba(13,8,5,0.82) 100%)',
+            background: 'linear-gradient(to bottom, rgba(13,8,5,0.80) 0%, rgba(13,8,5,0.50) 50%, rgba(13,8,5,0.80) 100%)',
             pointerEvents: 'none',
+            zIndex: 1,
           }}
         />
 
-        {/* Conteúdo */}
-        <div style={{ position: 'relative', zIndex: 10 }} className="max-w-7xl mx-auto px-4 py-20">
+        {/* Conteúdo — z-index acima do fundo */}
+        <div style={{ position: 'relative', zIndex: 2 }} className="max-w-7xl mx-auto px-4 py-20">
           <div className="flex items-end justify-between mb-10">
             <div>
               <p className="text-amber-600 text-xs uppercase tracking-[0.2em] mb-2">Seleção da casa</p>
@@ -209,11 +214,13 @@ export default async function HomePage() {
             </a>
           </div>
 
-          <div className="relative">
+          <div className="relative" style={{ zIndex: 2 }}>
             <div
-              className="absolute inset-0 -mx-4 rounded-2xl opacity-30 pointer-events-none"
               style={{
+                position: 'absolute',
+                inset: 0,
                 background: 'radial-gradient(ellipse at center, rgba(201,150,58,0.15) 0%, transparent 70%)',
+                pointerEvents: 'none',
               }}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
