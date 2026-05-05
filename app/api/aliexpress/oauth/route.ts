@@ -19,40 +19,38 @@ function signMD5(params: Record<string, string>, secret: string): string {
   return createHash('md5').update(str, 'utf8').digest('hex').toUpperCase()
 }
 
+function signNoPath(params: Record<string, string>, secret: string): string {
+  const sorted = Object.keys(params).sort()
+  const stringToSign = sorted.map(k => `${k}${params[k]}`).join('')
+  return createHmac('sha256', secret).update(stringToSign, 'utf8').digest('hex').toUpperCase()
+}
+
 async function tryTokenExchange(code: string) {
-  const tsMs        = String(Date.now())
-  const tsSec       = String(Math.floor(Date.now() / 1000))
-  const tsFormatted = new Date().toISOString().replace('T', ' ').substring(0, 19)
+  const tsMs = String(Date.now())
 
   const attempts = [
     {
-      label: 'SHA256 /rest/auth/token/create ts-ms',
+      label: 'SHA256 sem path ts-ms',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsMs },
+      signFn: (p: Record<string, string>) => signNoPath(p, APP_SECRET),
+    },
+    {
+      label: 'MD5 sem path ts-ms',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp: tsMs },
+      signFn: (p: Record<string, string>) => signNoPath(p, APP_SECRET),
+    },
+    {
+      label: 'SHA256 com path ts-ms',
       path: '/rest/auth/token/create',
       params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsMs },
       signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
     },
     {
-      label: 'SHA256 /rest/auth/token/create ts-sec',
-      path: '/rest/auth/token/create',
-      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsSec },
-      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
-    },
-    {
-      label: 'SHA256 /rest/auth/token/create ts-formatted',
-      path: '/rest/auth/token/create',
-      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsFormatted },
-      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
-    },
-    {
-      label: 'MD5 /rest/auth/token/create ts-ms',
+      label: 'MD5 secret-wrap ts-ms',
       path: '/rest/auth/token/create',
       params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp: tsMs },
-      signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
-    },
-    {
-      label: 'MD5 /rest/auth/token/create ts-formatted',
-      path: '/rest/auth/token/create',
-      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp: tsFormatted },
       signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
     },
   ]
@@ -62,6 +60,7 @@ async function tryTokenExchange(code: string) {
     const body = new URLSearchParams({ ...attempt.params, sign })
 
     console.log(`[AliExpress] Tentando: ${attempt.label}`)
+    console.log(`[AliExpress] Body: ${body.toString()}`)
 
     const res = await fetch(`${API_HOST}${attempt.path}`, {
       method:  'POST',
@@ -77,8 +76,7 @@ async function tryTokenExchange(code: string) {
     try {
       const data = JSON.parse(rawText)
       if (data.access_token) return data
-      // Só para se for erro de signature diferente — continua em todos outros casos
-      if (data.code === 'IncompleteSignature' || data.error_response) continue
+      // continua em qualquer erro de assinatura
     } catch {
       continue
     }
@@ -109,8 +107,7 @@ export async function GET(req: NextRequest) {
   if (code) {
     const supabase = await createClient()
     try {
-      const timestamp = String(Date.now())
-      const tokenData = await tryTokenExchange(code, timestamp)
+      const tokenData = await tryTokenExchange(code)
 
       if (!tokenData?.access_token) {
         console.error('[AliExpress] Nenhuma tentativa retornou access_token')
