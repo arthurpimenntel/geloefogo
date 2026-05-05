@@ -51,7 +51,7 @@ async function getAECredentials(supabase: any) {
   const { data: supplier } = await supabase
     .from('suppliers')
     .select('id, config')
-    .ilike('name', '%aliexpress%')
+    .ilike('name', '%ali%express%')
     .eq('active', true)
     .single()
 
