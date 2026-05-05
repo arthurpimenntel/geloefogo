@@ -56,7 +56,7 @@ export function HeroSection() {
         className="absolute inset-0 w-full h-full object-cover block md:hidden"
         style={{ opacity: 0.55 }}
       >
-        <source src="/video/videomobile.mp4" type="video/mp4" />
+        <source src="/video/videocelular.mp4" type="video/mp4" />
       </video>
 
       {/* ── Overlay gradiente para escurecer as bordas e garantir legibilidade ── */}

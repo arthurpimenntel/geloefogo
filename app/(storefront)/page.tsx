@@ -132,6 +132,38 @@ async function getDestaqueProdutos(): Promise<Product[]> {
   }
 }
 
+// Styles inline para não depender do purge do Tailwind
+const sLojaSection: React.CSSProperties = { position: 'relative' }
+
+const sBgDesktop: React.CSSProperties = {
+  position: 'absolute',
+  top: 0, right: 0, bottom: 0, left: 0,
+  backgroundImage: 'url(/images/fotodesktop.jpg)',
+  backgroundAttachment: 'fixed',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  opacity: 0.22,
+}
+
+const sBgMobile: React.CSSProperties = {
+  position: 'absolute',
+  top: 0, right: 0, bottom: 0, left: 0,
+  backgroundImage: 'url(/images/fotomobile.jpg)',
+  backgroundAttachment: 'scroll',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  opacity: 0.22,
+}
+
+const sBgOverlay: React.CSSProperties = {
+  position: 'absolute',
+  top: 0, right: 0, bottom: 0, left: 0,
+  background: 'linear-gradient(to bottom, rgba(13,8,5,0.82) 0%, rgba(13,8,5,0.60) 50%, rgba(13,8,5,0.82) 100%)',
+  pointerEvents: 'none',
+}
+
+const sConteudo: React.CSSProperties = { position: 'relative', zIndex: 10 }
+
 export default async function HomePage() {
   const destaques = await getDestaqueProdutos()
 
@@ -140,41 +172,19 @@ export default async function HomePage() {
       <HeroSection />
 
       {/* ── SEÇÃO DA LOJA COM FUNDO PARALLAX FIXO ── */}
-      <section className="relative">
-        {/* Fundo parallax — desktop */}
-        <div
-          className="absolute inset-0 hidden md:block"
-          style={{
-            backgroundImage: 'url(/images/fotodesktop.jpg)',
-            backgroundAttachment: 'fixed',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.18,
-          }}
-        />
+      <section style={sLojaSection}>
 
-        {/* Fundo parallax — mobile (scroll normal, iOS não suporta fixed) */}
-        <div
-          className="absolute inset-0 block md:hidden"
-          style={{
-            backgroundImage: 'url(/images/fotomobile.jpg)',
-            backgroundAttachment: 'scroll',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.18,
-          }}
-        />
+        {/* Fundo desktop — oculto no mobile via Tailwind display */}
+        <div style={sBgDesktop} className="hidden md:block" />
 
-        {/* Overlay para garantir contraste do texto sobre a foto */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(13,8,5,0.82) 0%, rgba(13,8,5,0.65) 50%, rgba(13,8,5,0.82) 100%)',
-          }}
-        />
+        {/* Fundo mobile — oculto no desktop via Tailwind display */}
+        <div style={sBgMobile} className="block md:hidden" />
+
+        {/* Overlay de contraste */}
+        <div style={sBgOverlay} />
 
         {/* Conteúdo da seção */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 py-20">
+        <div style={sConteudo} className="max-w-7xl mx-auto px-4 py-20">
           <div className="flex items-end justify-between mb-10">
             <div>
               <p className="text-amber-600 text-xs uppercase tracking-[0.2em] mb-2">Seleção da casa</p>
