@@ -8,13 +8,6 @@ const BASE_URL     = process.env.NEXT_PUBLIC_SITE_URL!
 const API_HOST     = 'https://api-sg.aliexpress.com'
 const CALLBACK_URL = `${BASE_URL}/api/aliexpress/oauth`
 
-/**
- * Implementação exata do ae_sdk (código fonte verificado):
- * 1. Se method contém "/", ele vira prefixo da string e é removido dos params
- * 2. Restante dos params: ordenados alfabeticamente, concatenados chave+valor
- * 3. HMAC-SHA256 com app_secret como chave (NÃO é plain SHA256)
- * 4. Request é POST com params na QUERY STRING (não no body)
- */
 function signAndBuildUrl(
   apiPath: string,
   params: Record<string, string | number>,
@@ -22,7 +15,6 @@ function signAndBuildUrl(
 ): string {
   const p = { ...params }
 
-  // O path vira prefixo da string de assinatura (e é removido dos params)
   let basestring = apiPath
 
   basestring += Object.entries(p)
@@ -35,7 +27,6 @@ function signAndBuildUrl(
     .digest('hex')
     .toUpperCase()
 
-  // Monta a URL com os params na query string (igual ao ae_sdk)
   const sortedEntries = Object.entries(p)
     .filter(([, v]) => v != null)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -79,7 +70,6 @@ export async function GET(req: NextRequest) {
 
       console.log('[AliExpress] URL final:', url)
 
-      // POST sem body — params vão na query string (comportamento do ae_sdk)
       const res = await fetch(url, { method: 'POST' })
 
       const rawText = await res.text()
@@ -102,6 +92,22 @@ export async function GET(req: NextRequest) {
         account_id:    data.account ?? null,
         updated_at:    new Date().toISOString(),
       }, { onConflict: 'provider' })
+
+      await (supabase
+  .from('suppliers') as any)
+  .update({
+    config: {
+      api_key:       APP_KEY,
+      api_url:       `${BASE_URL}/api/aliexpress/oauth`,
+      access_token:  data.access_token,
+      refresh_token: data.refresh_token ?? null,
+      token_expires: data.expire_time
+        ? new Date(Number(data.expire_time)).toISOString()
+        : null,
+    },
+    active: true,
+  })
+  .eq('name', 'Ali Express')
 
       return NextResponse.redirect(`${BASE_URL}/admin/fornecedores?ae_connected=1`)
     } catch (err) {
