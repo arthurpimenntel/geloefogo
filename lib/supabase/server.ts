@@ -1,5 +1,6 @@
 // lib/supabase/server.ts
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/database.types'
 
@@ -20,12 +21,18 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             })
           } catch {
-            // setAll é chamado de Server Component — cookies de resposta
-            // só podem ser definidos em Middleware ou Route Handlers.
-            // Pode ser ignorado com segurança se não houver refresh de sessão.
+            // ignorado em Server Components
           }
         },
       },
     }
+  )
+}
+
+// Cliente sem cookies — use apenas em generateStaticParams e contextos de build
+export function createStaticClient() {
+  return createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }

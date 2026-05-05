@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createStaticClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -7,8 +7,12 @@ import { ProductDetailClient } from './ProductDetailClient'
 export const revalidate = 300
 
 export async function generateStaticParams() {
-  const supabase = await createClient()
-  const { data } = await supabase.from('products').select('slug').eq('active', true).is('deleted_at', null)
+  const supabase = createStaticClient()
+  const { data } = await supabase
+    .from('products')
+    .select('slug')
+    .eq('active', true)
+    .is('deleted_at', null)
   return (data ?? []).map((p: any) => ({ slug: p.slug }))
 }
 
