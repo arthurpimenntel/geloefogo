@@ -49,10 +49,11 @@ function EntrarForm() {
         }
 
         if (signUpData.user && signUpData.session) {
-          await supabase
-            .from('profiles')
-            .update({ full_name: name } as any)
-            .eq('id', signUpData.user.id)
+         await (supabase as any)
+        .from('profiles')
+        .update({ full_name: name })
+        .eq('id', signUpData.user.id)
+
         }
 
         setSuccess('Conta criada! Verifique seu e-mail para confirmar o cadastro.')
