@@ -50,7 +50,7 @@ export default function AliExpressImportPage() {
     const { data } = await supabase
       .from('suppliers')
       .select('id')
-      .ilike('name', '%aliexpress%')
+      .ilike('name', '%ali%express%')
       .single()
     if (data?.id) setSupplierId(data.id)
     return data?.id || null
