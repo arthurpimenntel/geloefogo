@@ -1,30 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createHash } from 'crypto'
+import { createHmac } from 'crypto'
 
-const APP_KEY    = process.env.ALIEXPRESS_APP_KEY!
-const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET!
-const BASE_URL   = process.env.NEXT_PUBLIC_SITE_URL!
-const API_HOST   = 'https://api-sg.aliexpress.com'
+const APP_KEY      = process.env.ALIEXPRESS_APP_KEY!
+const APP_SECRET   = process.env.ALIEXPRESS_APP_SECRET!
+const BASE_URL     = process.env.NEXT_PUBLIC_SITE_URL!
+const API_HOST     = 'https://api-sg.aliexpress.com'
 const CALLBACK_URL = `${BASE_URL}/api/aliexpress/oauth`
 
 /**
- * Assinatura para System Interfaces (ex: /auth/token/create)
- * Formato: hex( sha256( apiPath + param1value1param2value2... ) )
- * É plain SHA256, NÃO é HMAC. O secret NÃO é usado como chave.
- * Ref: https://www.scribd.com/document/869829507/Aliexpress-Affiliate-Documentation-1
+ * Implementação exata do ae_sdk (código fonte verificado):
+ * 1. Se method contém "/", ele vira prefixo da string e é removido dos params
+ * 2. Restante dos params: ordenados alfabeticamente, concatenados chave+valor
+ * 3. HMAC-SHA256 com app_secret como chave (NÃO é plain SHA256)
+ * 4. Request é POST com params na QUERY STRING (não no body)
  */
-function signSystemInterface(
+function signAndBuildUrl(
   apiPath: string,
-  params: Record<string, string>,
+  params: Record<string, string | number>,
+  secret: string,
 ): string {
-  const sorted = Object.keys(params).sort()
-  // Concatena os params SEM separadores: "app_key123code3_xxx..."
-  const concatenated = sorted.map(k => `${k}${params[k]}`).join('')
-  // Prefixa com o path da API
-  const stringToSign = apiPath + concatenated
-  // Plain SHA256 (sem chave) — NÃO é HMAC
-  return createHash('sha256').update(stringToSign, 'utf8').digest('hex').toUpperCase()
+  const p = { ...params }
+
+  // O path vira prefixo da string de assinatura (e é removido dos params)
+  let basestring = apiPath
+
+  basestring += Object.entries(p)
+    .filter(([, v]) => v != null)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .reduce((acc, [key, value]) => acc + key + String(value), '')
+
+  const sign = createHmac('sha256', secret)
+    .update(basestring)
+    .digest('hex')
+    .toUpperCase()
+
+  // Monta a URL com os params na query string (igual ao ae_sdk)
+  const sortedEntries = Object.entries(p)
+    .filter(([, v]) => v != null)
+    .sort(([a], [b]) => a.localeCompare(b))
+
+  const query = sortedEntries
+    .map(([k, v], i) => `${i === 0 ? '?' : '&'}${k}=${encodeURIComponent(String(v))}`)
+    .join('')
+
+  return `${API_HOST}/rest${apiPath}${query}&sign=${encodeURIComponent(sign)}`
 }
 
 export async function GET(req: NextRequest) {
@@ -48,34 +68,19 @@ export async function GET(req: NextRequest) {
   if (code) {
     const supabase = await createClient()
     try {
-      // Apenas os 4 parâmetros que entram na assinatura (doc oficial)
-      const timestamp = String(Date.now())
-      const signParams: Record<string, string> = {
+      const params = {
         app_key:     APP_KEY,
         code,
         sign_method: 'sha256',
-        timestamp,
+        timestamp:   Date.now(),
       }
 
-      const sign = signSystemInterface('/auth/token/create', signParams)
+      const url = signAndBuildUrl('/auth/token/create', params, APP_SECRET)
 
-      // O body da requisição pode ter campos extras que NÃO entram na assinatura
-      const body = new URLSearchParams({
-        ...signParams,
-        sign,
-      })
+      console.log('[AliExpress] URL final:', url)
 
-      console.log('[AliExpress] String assinada:', `/auth/token/create` +
-        Object.keys(signParams).sort().map(k => `${k}${signParams[k]}`).join('')
-      )
-      console.log('[AliExpress] Sign gerada:', sign)
-      console.log('[AliExpress] Body:', body.toString())
-
-      const res = await fetch(`${API_HOST}/rest/auth/token/create`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body:    body.toString(),
-      })
+      // POST sem body — params vão na query string (comportamento do ae_sdk)
+      const res = await fetch(url, { method: 'POST' })
 
       const rawText = await res.text()
       console.log('[AliExpress] Status:', res.status, '| Raw:', rawText)
@@ -83,7 +88,7 @@ export async function GET(req: NextRequest) {
       const data = JSON.parse(rawText)
 
       if (!data.access_token) {
-        console.error('[AliExpress] Sem access_token. Resposta:', rawText)
+        console.error('[AliExpress] Sem access_token:', rawText)
         return NextResponse.redirect(`${BASE_URL}/admin/fornecedores?ae_error=token_failed`)
       }
 
