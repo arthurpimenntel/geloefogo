@@ -5,8 +5,8 @@ import { createHmac, createHash } from 'crypto'
 const APP_KEY    = process.env.ALIEXPRESS_APP_KEY!
 const APP_SECRET = process.env.ALIEXPRESS_APP_SECRET!
 const BASE_URL   = process.env.NEXT_PUBLIC_SITE_URL!
-const API_HOST   = 'https://api-sg.aliexpress.com'
-const API_PATH   = '/rest/auth/token/create'
+const API_HOST = 'https://api-sg.aliexpress.com'
+const API_PATH = '/auth/token/create'  
 
 // IOP SDK REST — para chamadas normais de API
 function signRest(apiPath: string, params: Record<string, string>, secret: string): string {
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       const paramsToSign: Record<string, string> = {
         app_key:     APP_KEY,
         code,
-        sign_method: 'md5',
+        sign_method: 'sha256',
         timestamp,
       }
 
