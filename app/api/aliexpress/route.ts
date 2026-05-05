@@ -151,8 +151,8 @@ export async function GET(req: NextRequest) {
       if (categoryId) extra.category_ids = categoryId
 
       const data  = await callAE('aliexpress.affiliate.product.query', accessToken, extra, appSecret)
-      console.log('[AliExpress] Search raw:', JSON.stringify(data))
-      const resp  = data?.aliexpress_affiliate_product_query_response?.resp_result
+console.log('[AliExpress] Search raw:', JSON.stringify(data))
+const resp  = data?.aliexpress_affiliate_product_query_response?.resp_result
       const products = resp?.result?.products?.product ?? []
 
       return NextResponse.json({
