@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { Suspense, useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 
@@ -23,7 +23,7 @@ const TEMPLATE_EXAMPLE = 'Cohiba Siglo VI,CUB-001,Cohiba,"O ápice da arte charu
 
 type Tab = 'catcode' | 'category' | 'sku' | 'csv'
 
-export default function ImportarProdutosPage() {
+function ImportarProdutosPage() {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const searchParams = useSearchParams()
