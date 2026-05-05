@@ -20,47 +20,40 @@ function signMD5(params: Record<string, string>, secret: string): string {
 }
 
 async function tryTokenExchange(code: string) {
-  // Timestamp no formato que o TOP API espera
-  const now = new Date()
-  const timestamp = now.toISOString().replace('T', ' ').substring(0, 19)
+  const tsMs        = String(Date.now())
+  const tsSec       = String(Math.floor(Date.now() / 1000))
+  const tsFormatted = new Date().toISOString().replace('T', ' ').substring(0, 19)
 
   const attempts = [
-    // TOP API com method explícito + timestamp formatado
     {
-      label: 'MD5 /sync method=aliexpress.system.oauth.token',
-      path: '/sync',
-      params: {
-        app_key:     APP_KEY,
-        code,
-        method:      'aliexpress.system.oauth.token',
-        sign_method: 'md5',
-        timestamp,
-      },
+      label: 'SHA256 /rest/auth/token/create ts-ms',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsMs },
+      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
+    },
+    {
+      label: 'SHA256 /rest/auth/token/create ts-sec',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsSec },
+      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
+    },
+    {
+      label: 'SHA256 /rest/auth/token/create ts-formatted',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'sha256', timestamp: tsFormatted },
+      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
+    },
+    {
+      label: 'MD5 /rest/auth/token/create ts-ms',
+      path: '/rest/auth/token/create',
+      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp: tsMs },
       signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
     },
-    // REST com timestamp Unix ms (tentativas anteriores)
     {
-      label: 'SHA256 /rest/auth/token/create timestamp-ms',
+      label: 'MD5 /rest/auth/token/create ts-formatted',
       path: '/rest/auth/token/create',
-      params: {
-        app_key:     APP_KEY,
-        code,
-        sign_method: 'sha256',
-        timestamp:   String(Date.now()),
-      },
-      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
-    },
-    // REST com timestamp formatado
-    {
-      label: 'SHA256 /rest/auth/token/create timestamp-formatted',
-      path: '/rest/auth/token/create',
-      params: {
-        app_key:     APP_KEY,
-        code,
-        sign_method: 'sha256',
-        timestamp,
-      },
-      signFn: (p: Record<string, string>) => signRest('/rest/auth/token/create', p, APP_SECRET),
+      params: { app_key: APP_KEY, code, sign_method: 'md5', timestamp: tsFormatted },
+      signFn: (p: Record<string, string>) => signMD5(p, APP_SECRET),
     },
   ]
 
@@ -69,7 +62,6 @@ async function tryTokenExchange(code: string) {
     const body = new URLSearchParams({ ...attempt.params, sign })
 
     console.log(`[AliExpress] Tentando: ${attempt.label}`)
-    console.log(`[AliExpress] Body:`, body.toString())
 
     const res = await fetch(`${API_HOST}${attempt.path}`, {
       method:  'POST',
@@ -85,12 +77,10 @@ async function tryTokenExchange(code: string) {
     try {
       const data = JSON.parse(rawText)
       if (data.access_token) return data
-      if (data.code !== 'IncompleteSignature') {
-        console.log('[AliExpress] Erro diferente — parando:', data.code)
-        return data
-      }
+      // Só para se for erro de signature diferente — continua em todos outros casos
+      if (data.code === 'IncompleteSignature' || data.error_response) continue
     } catch {
-      console.log('[AliExpress] Resposta não é JSON')
+      continue
     }
   }
 
