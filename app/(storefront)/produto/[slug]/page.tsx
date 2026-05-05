@@ -13,16 +13,16 @@ export async function generateStaticParams() {
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params   // ← resolve a Promise
+  const { slug } = await params
 
   const supabase = await createClient()
   const { data: product } = await supabase
     .from('products')
     .select('*, category:categories(name, slug), reviews(rating, comment, verified, created_at, user:profiles(full_name))')
-    .eq('slug', slug)   // ← usa a variável extraída
+    .eq('slug', slug)
     .eq('active', true)
     .is('deleted_at', null)
-    .single()
+    .single() as { data: any }
 
   if (!product) notFound()
 
@@ -31,7 +31,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .select('id, slug, name, brand, sale_price, images')
     .eq('active', true).is('deleted_at', null)
     .eq('category_id', product.category_id ?? '')
-    .neq('id', product.id).limit(4)
+    .neq('id', product.id).limit(4) as { data: any }
 
   const avgRating = product.reviews?.length
     ? product.reviews.reduce((s: number, r: any) => s + r.rating, 0) / product.reviews.length
@@ -41,7 +41,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-12">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-[11px] uppercase tracking-widest mb-10 flex-wrap">
         <Link href="/" className="text-amber-800 hover:text-amber-500 transition-colors">Início</Link>
         <span className="text-amber-900">›</span>
@@ -53,7 +52,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </nav>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20">
-        {/* Images */}
         <div className="space-y-3">
           <div className="relative aspect-square bg-[#1A0F08] border border-amber-900/20 overflow-hidden">
             {product.images?.[0] ? (
@@ -78,7 +76,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           )}
         </div>
 
-        {/* Info */}
         <div>
           {product.tags?.length > 0 && (
             <div className="flex gap-2 flex-wrap mb-4">
@@ -119,10 +116,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           <div className="grid grid-cols-2 gap-3 mb-6">
             {[
-              product.intensity     && { label:'Intensidade', value: INTENSITY_LABEL[product.intensity] ?? product.intensity },
+              product.intensity      && { label:'Intensidade', value: INTENSITY_LABEL[product.intensity] ?? product.intensity },
               product.origin_country && { label:'Origem',      value: product.origin_country },
-              product.brand         && { label:'Marca',        value: product.brand },
-              product.sku           && { label:'SKU',          value: product.sku },
+              product.brand          && { label:'Marca',       value: product.brand },
+              product.sku            && { label:'SKU',         value: product.sku },
             ].filter(Boolean).map((attr: any) => (
               <div key={attr.label} className="bg-[#1A0F08] p-3">
                 <p className="text-amber-800 text-[10px] uppercase tracking-widest">{attr.label}</p>
