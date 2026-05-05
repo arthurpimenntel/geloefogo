@@ -29,9 +29,8 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     async function load() {
-      // Try to load from configuracoes table; silently fallback to defaults if table doesn't exist
       try {
-        const { data } = await supabase.from('configuracoes').select('key, value')
+        const { data } = await (supabase as any).from('configuracoes').select('key, value')
         if (data && data.length > 0) {
           const map: Record<string, string> = {}
           data.forEach(({ key, value }: any) => { map[key] = value })
@@ -63,7 +62,7 @@ export default function ConfiguracoesPage() {
       const entries = Object.entries(settings).map(([key, value]) => ({
         key, value: String(value), updated_at: new Date().toISOString(),
       }))
-      const { error: err } = await supabase.from('configuracoes').upsert(entries, { onConflict: 'key' })
+      const { error: err } = await (supabase as any).from('configuracoes').upsert(entries, { onConflict: 'key' })
       if (err) throw err
       setSaved(true); setTimeout(() => setSaved(false), 3000)
     } catch (err: any) { setError(err.message ?? 'Erro ao salvar.') }
