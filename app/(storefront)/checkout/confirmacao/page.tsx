@@ -1,18 +1,19 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
-export default function ConfirmacaoPage() {
+function ConfirmacaoContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('orderId')
   const metodo  = searchParams.get('metodo') ?? 'pix'
 
   const METODO_MSG: Record<string, { title: string; desc: string; icon: string }> = {
-    pix:    { title: 'Pague via Pix',          desc: 'O QR Code e código copia-e-cola foram enviados ao seu e-mail. O pagamento é confirmado em instantes.', icon: '⚡' },
-    boleto: { title: 'Boleto Gerado',           desc: 'O boleto bancário foi enviado ao seu e-mail. O vencimento é em 3 dias úteis.', icon: '📄' },
-    cartao: { title: 'Pagamento Aprovado!',     desc: 'Seu cartão foi cobrado com sucesso. O pedido está sendo processado.', icon: '💳' },
+    pix:    { title: 'Pague via Pix',      desc: 'O QR Code e código copia-e-cola foram enviados ao seu e-mail. O pagamento é confirmado em instantes.', icon: '⚡' },
+    boleto: { title: 'Boleto Gerado',      desc: 'O boleto bancário foi enviado ao seu e-mail. O vencimento é em 3 dias úteis.', icon: '📄' },
+    cartao: { title: 'Pagamento Aprovado!', desc: 'Seu cartão foi cobrado com sucesso. O pedido está sendo processado.', icon: '💳' },
   }
   const info = METODO_MSG[metodo] ?? METODO_MSG.pix
 
@@ -57,5 +58,17 @@ export default function ConfirmacaoPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+export default function ConfirmacaoPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-xl mx-auto px-4 py-16 text-center">
+        <p className="text-amber-700 text-xs uppercase tracking-widest">Carregando...</p>
+      </div>
+    }>
+      <ConfirmacaoContent />
+    </Suspense>
   )
 }
