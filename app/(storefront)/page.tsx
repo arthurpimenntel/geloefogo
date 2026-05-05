@@ -92,7 +92,6 @@ async function getDestaqueProdutos(): Promise<Product[]> {
       category:categories(name, slug)
     `
 
-    // 1ª tentativa: produtos marcados como featured=true no admin
     const { data: featuredData } = await supabase
       .from('products')
       .select(SELECT)
@@ -106,7 +105,6 @@ async function getDestaqueProdutos(): Promise<Product[]> {
       return featuredData as unknown as Product[]
     }
 
-    // 2ª tentativa: fallback para tag 'Mais Vendido' (compatibilidade com produtos antigos)
     const { data: tagData } = await supabase
       .from('products')
       .select(SELECT)
@@ -120,7 +118,6 @@ async function getDestaqueProdutos(): Promise<Product[]> {
       return tagData as unknown as Product[]
     }
 
-    // 3ª tentativa: qualquer produto ativo recente
     const { data: recentData } = await supabase
       .from('products')
       .select(SELECT)
@@ -142,29 +139,67 @@ export default async function HomePage() {
     <>
       <HeroSection />
 
-      <section className="max-w-7xl mx-auto px-4 py-20">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-amber-600 text-xs uppercase tracking-[0.2em] mb-2">Seleção da casa</p>
-            <h2 className="font-playfair text-3xl text-amber-100">Em Alta</h2>
-          </div>
-          <a href="/catalogo"
-            className="text-amber-600 hover:text-amber-300 text-xs uppercase tracking-widest transition-colors">
-            Ver todos →
-          </a>
-        </div>
+      {/* ── SEÇÃO DA LOJA COM FUNDO PARALLAX FIXO ── */}
+      <section className="relative">
+        {/* Fundo parallax — desktop */}
+        <div
+          className="absolute inset-0 hidden md:block"
+          style={{
+            backgroundImage: 'url(/images/fotodesktop.jpg)',
+            backgroundAttachment: 'fixed',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.18,
+          }}
+        />
 
-        <div className="relative">
-          <div
-            className="absolute inset-0 -mx-4 rounded-2xl opacity-30 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse at center, rgba(201,150,58,0.15) 0%, transparent 70%)',
-            }}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {destaques.map(p => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+        {/* Fundo parallax — mobile (scroll normal, iOS não suporta fixed) */}
+        <div
+          className="absolute inset-0 block md:hidden"
+          style={{
+            backgroundImage: 'url(/images/fotomobile.jpg)',
+            backgroundAttachment: 'scroll',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.18,
+          }}
+        />
+
+        {/* Overlay para garantir contraste do texto sobre a foto */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(13,8,5,0.82) 0%, rgba(13,8,5,0.65) 50%, rgba(13,8,5,0.82) 100%)',
+          }}
+        />
+
+        {/* Conteúdo da seção */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-20">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-amber-600 text-xs uppercase tracking-[0.2em] mb-2">Seleção da casa</p>
+              <h2 className="font-playfair text-3xl text-amber-100">Em Alta</h2>
+            </div>
+            <a
+              href="/catalogo"
+              className="text-amber-600 hover:text-amber-300 text-xs uppercase tracking-widest transition-colors"
+            >
+              Ver todos →
+            </a>
+          </div>
+
+          <div className="relative">
+            <div
+              className="absolute inset-0 -mx-4 rounded-2xl opacity-30 pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse at center, rgba(201,150,58,0.15) 0%, transparent 70%)',
+              }}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {destaques.map(p => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -179,8 +214,10 @@ export default async function HomePage() {
             { icon: '⚡', title: 'Pix 5% OFF', desc: 'Desconto no pagamento' },
             { icon: '🔄', title: 'Troca Fácil', desc: 'Até 7 dias após receber' },
           ].map(({ icon, title, desc }) => (
-            <div key={title}
-              className="flex flex-col items-center text-center p-6 border border-amber-900/20 bg-[#100B07]">
+            <div
+              key={title}
+              className="flex flex-col items-center text-center p-6 border border-amber-900/20 bg-[#100B07]"
+            >
               <span className="text-3xl mb-3">{icon}</span>
               <p className="text-amber-200 text-sm font-medium">{title}</p>
               <p className="text-amber-700 text-xs mt-1">{desc}</p>
@@ -200,9 +237,11 @@ export default async function HomePage() {
               Passe o mouse sobre o mapa e veja o prazo estimado para a sua região. Trabalhamos com
               Correios, Jadlog e transportadoras regionais para garantir a melhor entrega.
             </p>
-            <a href="/catalogo"
+            <a
+              href="/catalogo"
               className="inline-block px-8 py-3 border border-amber-700 text-amber-500
-                hover:border-amber-400 hover:text-amber-200 text-xs uppercase tracking-widest transition-colors">
+                hover:border-amber-400 hover:text-amber-200 text-xs uppercase tracking-widest transition-colors"
+            >
               Comprar Agora
             </a>
           </div>
