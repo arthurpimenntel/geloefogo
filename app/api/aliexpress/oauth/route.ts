@@ -8,10 +8,6 @@ const BASE_URL   = process.env.NEXT_PUBLIC_SITE_URL!
 const API_HOST   = 'https://api-sg.aliexpress.com'
 const API_PATH   = '/rest/auth/token/create'
 
-/**
- * AliExpress REST API signing (IOP SDK)
- * stringToSign = apiPath + sorted(key + value) — sem secret no input do HMAC
- */
 function signRequest(
   apiPath: string,
   params: Record<string, string>,
@@ -31,41 +27,35 @@ export async function GET(req: NextRequest) {
   const code   = searchParams.get('code')
 
   if (action === 'connect') {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.redirect(`${BASE_URL}/admin/login`)
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.redirect(`${BASE_URL}/admin/login`)
 
-  const callbackUrl = `${BASE_URL}/api/aliexpress/oauth`
-  const authUrl = new URL('https://auth.aliexpress.com/oauth/authorize')
-  authUrl.searchParams.set('response_type', 'code')
-  authUrl.searchParams.set('force_auth', 'true')
-  authUrl.searchParams.set('redirect_uri', callbackUrl)
-  authUrl.searchParams.set('client_id', APP_KEY)
+    const callbackUrl = `${BASE_URL}/api/aliexpress/oauth`
+    const authUrl = new URL('https://auth.aliexpress.com/oauth/authorize')
+    authUrl.searchParams.set('response_type', 'code')
+    authUrl.searchParams.set('force_auth', 'true')
+    authUrl.searchParams.set('redirect_uri', callbackUrl)
+    authUrl.searchParams.set('client_id', APP_KEY)
 
-  console.log('[AliExpress] AUTH URL:', authUrl.toString())  // ← linha nova
-
-  return NextResponse.redirect(authUrl.toString())
-}
+    console.log('[AliExpress] AUTH URL:', authUrl.toString())
+    return NextResponse.redirect(authUrl.toString())
+  }
 
   if (code) {
     const supabase = await createClient()
     try {
-      const callbackUrl = `${BASE_URL}/api/aliexpress/oauth`
-      const timestamp   = String(Date.now())
+      const timestamp = String(Date.now())
 
-      // sign_method DEVE estar aqui dentro, não fora
       const paramsToSign: Record<string, string> = {
-        app_key:      APP_KEY,
+        app_key:     APP_KEY,
         code,
-        grant_type:   'authorization_code',
-        redirect_uri: callbackUrl,
-        sign_method:  'sha256',
+        sign_method: 'sha256',
         timestamp,
       }
 
       const sign = signRequest(API_PATH, paramsToSign, APP_SECRET)
 
-      // Debug: confirma a string que está sendo assinada
       const debugStr = API_PATH + Object.keys(paramsToSign).sort()
         .map(k => `${k}${paramsToSign[k]}`).join('')
       console.log('[AliExpress] stringToSign:', debugStr)
