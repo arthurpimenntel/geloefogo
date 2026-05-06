@@ -1,21 +1,12 @@
 'use client'
 import { useRef, useEffect, useState } from 'react'
 
-/**
- * ParallaxStoreBackground
- *
- * Técnica correta para simular background-attachment:fixed em iOS/Vercel:
- * - A imagem fica position:fixed (realmente pregada na viewport)
- * - Um clipPath via JS recorta a imagem para mostrar apenas a área da section
- * - Resultado: a imagem parece estática atrás de uma janela que se move
- */
-
 export function ParallaxStoreBackground() {
   const imgDesktopRef = useRef<HTMLImageElement>(null)
   const imgMobileRef  = useRef<HTMLImageElement>(null)
   const overlayRef    = useRef<HTMLDivElement>(null)
   const sectionRef    = useRef<HTMLDivElement>(null)
-  const [isMobile, setIsMobile]   = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -32,18 +23,18 @@ export function ParallaxStoreBackground() {
       const rect = section.getBoundingClientRect()
       const { top, bottom, left, right } = rect
 
-      // Clip em coordenadas de viewport — recorta a imagem fixed para a área da section
       const clip = `inset(${Math.max(0, top)}px ${window.innerWidth - right}px ${Math.max(0, window.innerHeight - bottom)}px ${left}px)`
 
       const img = isMobile ? imgMobileRef.current : imgDesktopRef.current
-      if (img)        img.style.clipPath = clip
-
+      if (img) img.style.clipPath = clip
       if (overlayRef.current) overlayRef.current.style.clipPath = clip
     }
 
+    // Roda o clip ANTES do primeiro paint para evitar flash
+    update()
+
     window.addEventListener('scroll', update, { passive: true })
     window.addEventListener('resize', update)
-    update()
 
     return () => {
       window.removeEventListener('scroll', update)
@@ -63,6 +54,8 @@ export function ParallaxStoreBackground() {
     pointerEvents: 'none',
     zIndex: 0,
     willChange: 'clip-path',
+    // Começa totalmente invisível — o useEffect aplica o clip correto antes do primeiro paint
+    clipPath: 'inset(100%)',
   }
 
   return (
@@ -76,13 +69,11 @@ export function ParallaxStoreBackground() {
         }
       `}</style>
 
-      {/* Referência da section */}
       <div
         ref={sectionRef}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
       />
 
-      {/* Imagem desktop — fixed na viewport, clipada para a section */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         id="store-bg-desktop"
@@ -93,7 +84,6 @@ export function ParallaxStoreBackground() {
         style={fixedImgStyle}
       />
 
-      {/* Imagem mobile — fixed na viewport, clipada para a section */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         id="store-bg-mobile"
@@ -104,7 +94,6 @@ export function ParallaxStoreBackground() {
         style={{ ...fixedImgStyle, display: 'none' }}
       />
 
-      {/* Overlay de contraste — também fixed e clipado */}
       <div
         ref={overlayRef}
         style={{
@@ -116,6 +105,7 @@ export function ParallaxStoreBackground() {
           pointerEvents: 'none',
           zIndex: 1,
           willChange: 'clip-path',
+          clipPath: 'inset(100%)',
         }}
       />
     </>
