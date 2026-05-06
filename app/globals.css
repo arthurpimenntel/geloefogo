@@ -14,7 +14,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; cursor: none; }
+
 
 /* Mobile: restore cursor */
 @media (pointer: coarse) {
