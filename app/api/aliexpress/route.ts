@@ -59,19 +59,9 @@ async function callAE(
   const params = buildParams(method, accessToken, extra, appSecret)
   const qs     = new URLSearchParams(params).toString()
   const url    = `${AE_BASE}?${qs}`
-
-  const res  = await fetch(url)
-  const json = await res.json()
-
-  // Logging estruturado: detecta erro de API sem quebrar o caller
-  const topKey     = Object.keys(json)[0]
-  const respResult = json[topKey]?.resp_result
-  if (respResult && respResult.resp_code !== 200) {
-    console.error(
-      `[AE] API error | method=${method} | code=${respResult.resp_code} | msg=${respResult.resp_msg}`,
-    )
-  }
-
+  const res    = await fetch(url)
+  const json   = await res.json()
+  console.log('[AE RAW]', method, JSON.stringify(json))
   return json
 }
 
