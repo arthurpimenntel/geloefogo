@@ -17,7 +17,7 @@ export function ProductCard({ product }: Props) {
     e.stopPropagation()
     e.preventDefault()
     setAdding(true)
-    addToCart(product)
+    addToCart({ ...product, salePrice, comparePrice, originCountry })
     await new Promise(r => setTimeout(r, 600))
     setAdding(false)
     openCart()

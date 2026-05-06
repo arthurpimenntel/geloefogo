@@ -4,7 +4,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useCart } from '@/hooks/useCart'
+import { useCart, selectSubtotal } from '@/hooks/useCart'
 
 const overlayVariants = {
   hidden: { opacity: 0 },
@@ -19,10 +19,10 @@ const drawerVariants = {
 }
 
 export function CartDrawer() {
-  const { items, isOpen, close, subtotal, setQty, remove } = useCart()
-
-  const fmt = (n: number) =>
-    n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const { items, isOpen, close, setQty, remove } = useCart()
+  const subtotal = useCart(selectSubtotal)
+  const fmt = (n: number | undefined | null) =>
+  (n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   return (
     <AnimatePresence>

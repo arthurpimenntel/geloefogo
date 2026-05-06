@@ -16,22 +16,27 @@ interface CartStore {
   remove(productId: string): void
   setQty(productId: string, qty: number): void
   clear(): void
-  readonly subtotal: number
-  readonly itemCount: number
 }
 
 function sanitizeProduct(product: Product): Product {
   return {
     ...product,
-    salePrice:    parseFloat(String(product.salePrice))    || 0,
-    comparePrice: product.comparePrice != null
-      ? parseFloat(String(product.comparePrice)) || 0
-      : null,
-    costPrice: product.costPrice != null
-      ? parseFloat(String(product.costPrice)) || 0
-      : null,
+    salePrice:    Number(product.salePrice)    || 0,
+    comparePrice: product.comparePrice != null ? Number(product.comparePrice) || 0 : undefined,
+    costPrice:    product.costPrice    != null ? Number(product.costPrice)    || 0 : undefined,
   }
 }
+
+// Selectors externos — não dependem de getters no objeto do store
+// (getters são perdidos no shallow-merge interno do set() do Zustand)
+export const selectSubtotal = (state: CartStore & { items: CartItem[] }) =>
+  state.items.reduce(
+    (sum, item) => sum + (Number(item.product.salePrice) || 0) * item.quantity,
+    0
+  )
+
+export const selectItemCount = (state: CartStore & { items: CartItem[] }) =>
+  state.items.reduce((sum, item) => sum + item.quantity, 0)
 
 export const useCart = create<CartStore>()(
   persist(
@@ -73,21 +78,9 @@ export const useCart = create<CartStore>()(
       },
 
       clear: () => set({ items: [] }),
-
-      get subtotal() {
-        return get().items.reduce(
-          (s, i) => s + (parseFloat(String(i.product.salePrice)) || 0) * i.quantity,
-          0
-        )
-      },
-
-      get itemCount() {
-        return get().items.reduce((s, i) => s + i.quantity, 0)
-      },
     }),
     {
       name: 'tabacaria-cart',
-      // Sanitiza preços ao reidratar do localStorage
       onRehydrateStorage: () => state => {
         if (!state) return
         state.items = state.items.map(item => ({

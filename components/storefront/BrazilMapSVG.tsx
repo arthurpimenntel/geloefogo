@@ -68,7 +68,7 @@ export function BrazilMapSVG() {
 
                 return (
                   <Geography
-                    key={geo.rsmKey}
+                    key={geo.rsmKey ?? geo.id ?? geo.properties?.name}
                     geography={geo}
                     onMouseEnter={() => handleMouseEnter(region)}
                     onMouseLeave={handleMouseLeave}

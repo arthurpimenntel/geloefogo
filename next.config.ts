@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   serverExternalPackages: ['ftp2', 'socksv5'],
   turbopack: {},
   webpack: (config, { isServer }) => {
@@ -26,6 +23,10 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**.cjdropshipping.com' },
       { protocol: 'https', hostname: '**.aliexpress.com' },
       { protocol: 'https', hostname: '**.alicdn.com' },
+      { protocol: 'https', hostname: '**.ltwebstatic.com' },
+      { protocol: 'https', hostname: '**.supabase.co' },
+      { protocol: 'https', hostname: '**.gstatic.com' },
+      { protocol: 'https', hostname: '**.googleusercontent.com' },
     ],
   },
   allowedDevOrigins: ['deliver-submit-head-ago.trycloudflare.com'],

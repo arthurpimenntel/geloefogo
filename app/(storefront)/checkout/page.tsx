@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useCart } from '@/hooks/useCart'
+import { useCart, selectSubtotal } from '@/hooks/useCart'
 
 type Step = 'dados' | 'entrega' | 'pagamento'
 interface FormData {
@@ -35,10 +35,10 @@ const INPUT = `bg-[#1A0F08] border border-amber-900/40 text-amber-100 px-4 py-2.
   text-sm focus:outline-none focus:border-amber-600 transition-colors placeholder:text-amber-900 w-full`
 
 export default function CheckoutPage() {
-  const router  = useRouter()
-  const items   = useCart(s => s.items)
-  const subtotal = useCart(s => s.subtotal)
-  const clear   = useCart(s => s.clear)
+  const router   = useRouter()
+  const items    = useCart(s => s.items)
+  const subtotal = useCart(selectSubtotal)
+  const clear    = useCart(s => s.clear)
 
   const [step, setStep]       = useState<Step>('dados')
   const [form, setForm]       = useState<FormData>(INITIAL)
@@ -338,7 +338,7 @@ export default function CheckoutPage() {
                   <p className="text-amber-700 text-xs">×{quantity}</p>
                 </div>
                 <p className="text-amber-400 text-xs font-medium whitespace-nowrap">
-                  {(product.salePrice * quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  {(Number(product.salePrice) * quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
               </li>
             ))}
