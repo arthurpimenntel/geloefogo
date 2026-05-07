@@ -2,13 +2,12 @@
   "name": "geloefogo",
   "version": "0.1.0",
   "private": true,
-    "scripts": {
+  "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
-
   "dependencies": {
     "@react-email/components": "^1.0.12",
     "@react-three/cannon": "^6.6.0",
@@ -16,14 +15,15 @@
     "@react-three/fiber": "^9.6.1",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
+    "@vnedyalk0v/react19-simple-maps": "^2.0.6",
     "framer-motion": "^12.38.0",
     "ftp2": "^0.3.13",
+    "lucide-react": "^1.14.0",
     "mercadopago": "^2.12.0",
     "next": "16.2.4",
     "papaparse": "^5.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@vnedyalk0v/react19-simple-maps": "^2.0.6",
     "resend": "^6.12.2",
     "stripe": "^22.1.0",
     "three": "^0.184.0",

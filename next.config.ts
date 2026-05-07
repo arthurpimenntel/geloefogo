@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '**.cjdropshipping.com' },
       { protocol: 'https', hostname: '**.aliexpress.com' },
+      { protocol: 'https', hostname: '**.aliexpress-media.com' },
       { protocol: 'https', hostname: '**.alicdn.com' },
       { protocol: 'https', hostname: '**.ltwebstatic.com' },
       { protocol: 'https', hostname: '**.supabase.co' },

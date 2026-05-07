@@ -1,154 +1,66 @@
-'use client'
-import { useRef, useCallback } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { MarqueeBand } from './MarqueeBand'
-import { useCountUp } from '@/hooks/useCountUp'
-import Link from 'next/link'
+'use client';
 
-export function HeroSection() {
-  const containerRef = useRef<HTMLDivElement>(null)
+import { useState, useEffect } from 'react';
 
-  const rawX = useMotionValue(0)
-  const rawY = useMotionValue(0)
-  const x = useSpring(rawX, { stiffness: 50, damping: 20 })
-  const y = useSpring(rawY, { stiffness: 50, damping: 20 })
+export default function HeroSection() {
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  const fgX = useTransform(x, v => v * 0.04)
-  const fgY = useTransform(y, v => v * 0.04)
-
-  const onMove = useCallback((e: React.MouseEvent) => {
-    const r = containerRef.current!.getBoundingClientRect()
-    const nx = (e.clientX - r.left) / r.width - 0.5
-    const ny = (e.clientY - r.top) / r.height - 0.5
-    rawX.set(nx * r.width)
-    rawY.set(ny * r.height)
-  }, [rawX, rawY])
-
-  const { value: memberCount, ref: cRef } = useCountUp(4827)
+  useEffect(() => {
+    const update = () => setIsDesktop(window.innerWidth >= 768);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   return (
-    <section
-      ref={containerRef}
-      onMouseMove={onMove}
-      onMouseLeave={() => { rawX.set(0); rawY.set(0) }}
-      className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#0D0805]"
-    >
-      {/* ── Vídeo de fundo — desktop ── */}
+    <section className="relative w-full h-screen flex items-end overflow-hidden bg-[#1C1C1C]">
+      {/* Video Background */}
       <video
-        key="desktop-video"
         autoPlay
-        muted
         loop
+        muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover hidden md:block"
-        style={{ opacity: 0.55 }}
+        className="absolute inset-0 w-full h-full object-cover opacity-50"
+        key={isDesktop ? 'desktop' : 'mobile'}
       >
-        <source src="/video/videodesktop.mp4" type="video/mp4" />
+        <source
+          src={isDesktop ? '/video/videodesktop.mp4' : '/video/videocelular.mp4'}
+          type="video/mp4"
+        />
       </video>
 
-      {/* ── Vídeo de fundo — mobile ── */}
-      <video
-        key="mobile-video"
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover block md:hidden"
-        style={{ opacity: 0.55 }}
-      >
-        <source src="/video/videocelular.mp4" type="video/mp4" />
-      </video>
+      {/* Gradient overlay — mais pesado embaixo pra legibilidade */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#1C1C1C] via-[#1C1C1C]/40 to-transparent" />
 
-      {/* ── Overlay gradiente para escurecer as bordas e garantir legibilidade ── */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `
-            linear-gradient(to bottom,
-              rgba(13,8,5,0.55) 0%,
-              rgba(13,8,5,0.1)  35%,
-              rgba(13,8,5,0.1)  65%,
-              rgba(13,8,5,0.75) 100%
-            )
-          `,
-        }}
-      />
-
-      {/* ── Overlay lateral esquerdo para o texto ficar sempre legível ── */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'linear-gradient(to right, rgba(13,8,5,0.7) 0%, rgba(13,8,5,0.2) 55%, transparent 100%)',
-        }}
-      />
-
-      {/* ── Conteúdo com parallax suave no mouse ── */}
-      <motion.div
-        className="relative z-20 max-w-5xl mx-auto px-6 py-24 w-full"
-        style={{ x: fgX, y: fgY }}
-      >
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-amber-600 text-xs uppercase tracking-[0.25em] mb-4"
-        >
-          Tabacaria Premium
-        </motion.p>
-
-        <motion.h1
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.35 }}
-          className="font-playfair text-6xl md:text-8xl text-amber-100 leading-tight"
-        >
-          O prazer da<br />
-          <span className="text-amber-400">qualidade</span><br />
-          em cada tragada.
-        </motion.h1>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.55 }}
-          className="flex gap-4 mt-10"
-        >
-          <Link
-            href="/catalogo"
-            className="px-8 py-3 bg-amber-600 hover:bg-amber-500 transition-colors
-              text-[#0D0805] font-semibold text-sm uppercase tracking-widest"
-          >
+      {/* Content — ancorado embaixo */}
+      <div className="relative z-10 w-full px-6 md:px-16 pb-20 md:pb-28 max-w-5xl">
+        <p className="text-xs tracking-[0.4em] uppercase text-[#C9A96E] mb-5">
+          Tabacaria Premium · Desde 2018
+        </p>
+        <h1 className="text-6xl md:text-8xl font-serif font-black text-[#F5EFE6] leading-[0.95] mb-8">
+          Gelo<br />
+          <span className="text-[#C9A96E]">&</span> Fogo
+        </h1>
+        <p className="text-base md:text-lg text-[#B8A898] mb-10 max-w-md leading-relaxed">
+          Os melhores produtos importados, selecionados com critério para quem entende.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button className="px-8 py-4 bg-[#C9A96E] text-[#1C1C1C] rounded-full font-bold text-sm tracking-widest uppercase hover:bg-[#B8944F] transition-all duration-300">
             Ver Catálogo
-          </Link>
-        </motion.div>
+          </button>
+          <button className="px-8 py-4 border border-[#F5EFE6]/30 text-[#F5EFE6] rounded-full font-semibold text-sm tracking-widest uppercase hover:border-[#F5EFE6]/60 transition-all duration-300">
+            Saiba Mais
+          </button>
+        </div>
+      </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.7 }}
-          className="mt-16 flex gap-12"
-        >
-          <div>
-            <span ref={cRef as any} className="font-playfair text-4xl text-amber-400">
-              {memberCount.toLocaleString('pt-BR')}+
-            </span>
-            <p className="text-amber-700 text-xs uppercase tracking-widest mt-1">Clientes</p>
-          </div>
-          <div>
-            <span className="font-playfair text-4xl text-amber-400">380+</span>
-            <p className="text-amber-700 text-xs uppercase tracking-widest mt-1">Produtos</p>
-          </div>
-          <div>
-            <span className="font-playfair text-4xl text-amber-400">27</span>
-            <p className="text-amber-700 text-xs uppercase tracking-widest mt-1">Origens</p>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* ── MarqueeBand fixa na base ── */}
-      <div className="absolute bottom-0 left-0 right-0 z-30">
-        <MarqueeBand />
+      {/* Scroll indicator */}
+      <div className="absolute bottom-8 right-8 z-20 flex flex-col items-center gap-2 opacity-50">
+        <span className="text-[#F5EFE6] text-xs tracking-widest uppercase rotate-90 origin-center translate-x-4">
+          Scroll
+        </span>
+        <div className="w-px h-12 bg-[#F5EFE6]/40 animate-pulse" />
       </div>
     </section>
-  )
+  );
 }

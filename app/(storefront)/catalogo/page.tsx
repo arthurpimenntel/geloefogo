@@ -36,9 +36,9 @@ export default async function CatalogoPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const params  = await searchParams
+  const params   = await searchParams
   const supabase = await createClient()
-  const PAGE    = 24
+  const PAGE     = 24
 
   let query = supabase
     .from('products')
@@ -64,10 +64,7 @@ export default async function CatalogoPage({
       .select('id')
       .eq('slug', params.categoria)
       .single<{ id: string }>()
-
-    if (cat?.id) {
-      query = query.eq('category_id', cat.id)
-    }
+    if (cat?.id) query = query.eq('category_id', cat.id)
   }
 
   if (params.intensidade) query = query.eq('intensity', params.intensidade)
@@ -83,62 +80,83 @@ export default async function CatalogoPage({
   if (error) {
     console.error('Erro ao buscar produtos:', error)
     return (
-      <main className="max-w-7xl mx-auto px-4 py-10">
-        <div className="text-center text-red-400">
+      <main className="max-w-7xl mx-auto px-6 py-10">
+        <div className="text-center text-[#8B7355]">
           Erro ao carregar produtos. Tente novamente mais tarde.
         </div>
       </main>
     )
   }
 
-  const productsArray = products || []
-  const hasMore    = productsArray.length > PAGE
-  const items      = hasMore ? productsArray.slice(0, PAGE) : productsArray
+  const hasMore    = products.length > PAGE
+  const items      = hasMore ? products.slice(0, PAGE) : products
   const nextCursor = hasMore && items.length > 0
     ? (items[items.length - 1] as any).created_at
     : null
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-10">
-      <div className="flex gap-8">
-        <aside className="hidden lg:block w-60 flex-shrink-0">
-          <CatalogFilters />
-        </aside>
+    <main className="min-h-screen bg-[#F5EFE6]">
+      <div className="max-w-7xl mx-auto px-6 py-12">
 
-        <section className="flex-1">
-          <p className="text-amber-700 text-xs uppercase tracking-widest mb-6">
-            {items.length} produto{items.length !== 1 ? 's' : ''}
-            {params.categoria ? ` em "${params.categoria}"` : ''}
+        {/* Título da página */}
+        <div className="mb-10">
+          <p className="text-xs tracking-[0.3em] uppercase text-[#8B7355] mb-2">
+            {params.categoria ? `Categoria` : 'Todos os Produtos'}
           </p>
+          <h1 className="text-4xl font-serif font-bold text-[#1C1C1C]">
+            {params.categoria
+              ? params.categoria.charAt(0).toUpperCase() + params.categoria.slice(1)
+              : 'Catálogo'}
+          </h1>
+        </div>
 
-          {items.length === 0 ? (
-            <div className="text-center text-amber-400 py-12">
-              Nenhum produto encontrado. Tente outros filtros.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {items.map(p => (
-                <ProductCard key={p.id} product={p as any} />
-              ))}
-            </div>
-          )}
+        <div className="flex gap-10">
+          {/* Sidebar filtros */}
+          <aside className="hidden lg:block w-56 flex-shrink-0">
+            <CatalogFilters />
+          </aside>
 
-          {nextCursor && (
-            <a
-              href={`/catalogo?${new URLSearchParams({
-                ...Object.fromEntries(
-                  Object.entries(params).filter(([, v]) => v != null) as [string, string][]
-                ),
-                cursor: nextCursor,
-              })}`}
-              className="mt-10 block w-full py-3 border border-amber-800/40
-                text-center text-amber-600 text-sm uppercase tracking-widest
-                hover:border-amber-600 hover:text-amber-300 transition"
-            >
-              Carregar mais
-            </a>
-          )}
-        </section>
+          {/* Grid produtos */}
+          <section className="flex-1">
+            <p className="text-[#8B7355] text-xs uppercase tracking-widest mb-8">
+              {items.length} produto{items.length !== 1 ? 's' : ''}
+              {params.categoria ? ` em "${params.categoria}"` : ''}
+            </p>
+
+            {items.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-[#8B7355] font-serif text-xl mb-2">Nenhum produto encontrado.</p>
+                <p className="text-[#B8A898] text-sm">Tente outros filtros ou explore o catálogo completo.</p>
+                <a
+                  href="/catalogo"
+                  className="inline-block mt-6 px-6 py-3 border border-[#1C1C1C] text-[#1C1C1C] text-xs uppercase tracking-widest rounded-full hover:bg-[#1C1C1C] hover:text-[#F5EFE6] transition-all duration-300"
+                >
+                  Ver tudo
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {items.map(p => (
+                  <ProductCard key={p.id} product={p as any} />
+                ))}
+              </div>
+            )}
+
+            {nextCursor && (
+              <a
+                href={`/catalogo?${new URLSearchParams({
+                  ...Object.fromEntries(
+                    Object.entries(params).filter(([, v]) => v != null) as [string, string][]
+                  ),
+                  cursor: nextCursor,
+                })}`}
+                className="mt-12 block w-full py-4 border border-[#D4B896] text-center text-[#8B7355] text-xs uppercase tracking-widest hover:border-[#1C1C1C] hover:text-[#1C1C1C] transition-all duration-300 rounded-full"
+              >
+                Carregar mais
+              </a>
+            )}
+          </section>
+        </div>
       </div>
     </main>
   )

@@ -23,16 +23,16 @@ const REGION_INFO: Record<string, { label: string; prazo: string }> = {
 }
 
 const REGION_COLORS: Record<string, string> = {
-  norte:      '#4a2010',
-  nordeste:   '#3d1a0c',
-  centroeste: '#452008',
-  sudeste:    '#4a1c0a',
-  sul:        '#401e0a',
+  norte:      '#D9CEBD',
+  nordeste:   '#8B7355',
+  centroeste: '#6B5A42',
+  sudeste:    '#C9A96E',
+  sul:        '#B8944F',
 }
 
 export function BrazilMapSVG() {
   const [hovered, setHovered] = useState<string | null>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleMouseEnter = useCallback((region: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
@@ -51,13 +51,13 @@ export function BrazilMapSVG() {
 
   return (
     <div className="flex flex-col items-center gap-4 w-full h-full">
-      <div style={{ width: '100%', height: '100%', minHeight: '600px' }}>
+      <div style={{ width: '100%', maxWidth: '600px', height: 'auto' }}>
         <ComposableMap
           projection="geoMercator"
-          projectionConfig={{ scale: 850, center: [-52, -16] }}
-          width={700}
-          height={680}
-          style={{ width: '100%', height: '100%' }}
+          projectionConfig={{ scale: 750, center: [-52, -14] }}
+          width={600}
+          height={560}
+          style={{ width: '100%', height: 'auto' }}
         >
           <Geographies geography={geoData}>
             {({ geographies }) =>
@@ -74,17 +74,17 @@ export function BrazilMapSVG() {
                     onMouseLeave={handleMouseLeave}
                     style={{
                       default: {
-                        fill: isHovered ? '#C9963A' : REGION_COLORS[region],
-                        stroke: '#C9963A',
+                        fill: isHovered ? '#1C1C1C' : REGION_COLORS[region],
+                        stroke: '#F5EFE6',
                         strokeWidth: isHovered ? 1.2 : 0.5,
-                        strokeOpacity: isHovered ? 0.9 : 0.4,
+                        strokeOpacity: isHovered ? 1 : 0.6,
                         outline: 'none',
                         cursor: 'pointer',
                         transition: 'fill 0.15s ease-out, stroke-width 0.1s ease-out',
                       },
                       hover: {
-                        fill: '#C9963A',
-                        stroke: '#C9963A',
+                        fill: '#1C1C1C',
+                        stroke: '#C9A96E',
                         strokeWidth: 1.2,
                         outline: 'none',
                         cursor: 'pointer',
@@ -99,21 +99,34 @@ export function BrazilMapSVG() {
         </ComposableMap>
       </div>
 
+      {/* Info de região */}
       <div className="text-center min-h-[70px] flex flex-col items-center justify-center">
         <div className={`transition-opacity duration-200 ${info ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           {info && (
-            <>
-              <p className="text-amber-300 font-medium text-base">{info.label}</p>
-              <p className="text-amber-600 text-sm mt-0.5">{info.prazo}</p>
-            </>
+            <div className="bg-white/70 backdrop-blur-sm border border-[#D4B896]/40 rounded-2xl px-8 py-4 shadow-sm">
+              <p className="text-[#1C1C1C] font-serif font-bold text-base">{info.label}</p>
+              <p className="text-[#8B7355] text-sm mt-0.5 tracking-wide">{info.prazo}</p>
+            </div>
           )}
         </div>
         {!info && (
-          <p className="text-amber-800 text-xs tracking-widest uppercase">
+          <p className="text-[#8B7355] text-xs tracking-[0.25em] uppercase">
             Passe o mouse sobre sua região
           </p>
         )}
       </div>
+
+      {/* Legenda */}
+      <div className="flex flex-wrap justify-center gap-5 mt-2">
+        {Object.entries(REGION_INFO).map(([key, { label }]) => (
+          <div key={key} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: REGION_COLORS[key] }} />
+            <span className="text-sm text-[#8B7355] tracking-wide">{label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
+
+export default BrazilMapSVG

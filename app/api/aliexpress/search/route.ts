@@ -3,68 +3,89 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 
-const AE_BASE = 'https://api-sg.aliexpress.com/sync'
-const APP_KEY = process.env.ALIEXPRESS_APP_KEY!
+const AE_BASE        = 'https://api-sg.aliexpress.com/sync'
+const APP_KEY        = process.env.ALIEXPRESS_APP_KEY!
+const APP_SECRET_ENV = process.env.ALIEXPRESS_APP_SECRET!
 
-// ─── Helpers de assinatura e chamada (mesma lógica do products/route.ts) ──────
+// ─── Assinatura MD5 (plain MD5, não HMAC) ─────────────────────────────────────
 function signRequest(params: Record<string, string>, appSecret: string): string {
   const sorted = Object.keys(params).sort().map(k => `${k}${params[k]}`).join('')
   return crypto
-    .createHmac('md5', appSecret)
+    .createHash('md5')
     .update(`${appSecret}${sorted}${appSecret}`)
     .digest('hex')
     .toUpperCase()
 }
 
-function buildParams(method: string, accessToken: string, extra: Record<string, string>, appSecret: string) {
+function buildParams(
+  method: string,
+  extra: Record<string, string>,
+  appSecret: string,
+): Record<string, string> {
   const params: Record<string, string> = {
     method,
-    app_key: APP_KEY,
-    access_token: accessToken,
-    timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-    sign_method: 'hmac-md5',
+    app_key:     APP_KEY,
+    timestamp:   new Date().toISOString().replace('T', ' ').substring(0, 19),
+    sign_method: 'md5',
     ...extra,
   }
   params.sign = signRequest(params, appSecret)
   return params
 }
 
-async function callAE(method: string, accessToken: string, extra: Record<string, string>, appSecret: string) {
-  const params = buildParams(method, accessToken, extra, appSecret)
-  const qs = new URLSearchParams(params).toString()
-  const res = await fetch(`${AE_BASE}?${qs}`)
+async function callAE(
+  method: string,
+  extra: Record<string, string>,
+  appSecret: string,
+) {
+  const params = buildParams(method, extra, appSecret)
+  const qs     = new URLSearchParams(params).toString()
+  const res    = await fetch(`${AE_BASE}?${qs}`)
   return res.json()
 }
 
-// ─── Verificação de autenticação e permissão ──────────────────────────────────
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 async function authCheck(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autorizado', status: 401, supabase: null }
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
   const allowed = ['support', 'manager', 'super_admin']
-  if (!profile || !allowed.includes(profile.role)) return { error: 'Sem permissão', status: 403, supabase: null }
+  if (!profile || !allowed.includes(profile.role)) {
+    return { error: 'Sem permissão', status: 403, supabase: null }
+  }
   return { error: null, status: 200, supabase }
 }
 
 async function getAECredentials(supabase: any) {
-  const { data: supplier } = await supabase
+  const { data: supplier, error: supplierErr } = await supabase
     .from('suppliers')
-    .select('id, config')
+    .select('id, name, config, active')
     .ilike('name', '%ali%express%')
-    .eq('active', true)
-    .single()
+    .maybeSingle()
 
-  const appSecret   = supplier?.config?.app_secret   || process.env.ALIEXPRESS_APP_SECRET
-  const accessToken = supplier?.config?.access_token
+  if (supplierErr) {
+    console.warn('[AE] suppliers query error:', supplierErr.message)
+  }
 
-  if (!appSecret)   throw new Error('AliExpress não configurado. Adicione ALIEXPRESS_APP_SECRET no .env ou configure o fornecedor.')
-  if (!accessToken) throw new Error('AliExpress não autorizado. Conecte sua conta na página de fornecedores.')
+  const appSecret = supplier?.config?.app_secret ?? APP_SECRET_ENV
 
-  return { appSecret, accessToken, supplierId: supplier?.id }
+  if (!appSecret) {
+    throw new Error(
+      'AliExpress não configurado. Adicione ALIEXPRESS_APP_SECRET no .env ou configure o fornecedor.',
+    )
+  }
+
+  return { appSecret, supplierId: supplier?.id ?? null }
 }
 
-// ─── Normalização de produto (igual ao products/route.ts) ─────────────────────
+// ─── Normalização ─────────────────────────────────────────────────────────────
 function normalizeProduct(p: any) {
   const price    = p.target_sale_price || p.sale_price || p.original_price || '0'
   const priceVal = parseFloat(String(price).replace(/[^0-9.]/g, '')) || 0
@@ -93,7 +114,7 @@ export async function GET(req: NextRequest) {
     const auth = await authCheck(req)
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-    const { appSecret, accessToken } = await getAECredentials(auth.supabase)
+    const { appSecret } = await getAECredentials(auth.supabase)
     const { searchParams } = new URL(req.url)
 
     const keyword    = searchParams.get('keyword') || ''
@@ -108,16 +129,16 @@ export async function GET(req: NextRequest) {
       page_no:         page,
       page_size:       size,
       sort:            'SALE_PRICE_ASC',
-      target_currency: 'USD',
-      target_language: 'EN',
+      target_currency: 'BRL',
+      target_language: 'PT',
       tracking_id:     'default',
     }
-    if (categoryId) extra.category_ids = categoryId
+    if (categoryId) extra.category_ids  = categoryId
     if (minPrice)   extra.min_sale_price = minPrice
     if (maxPrice)   extra.max_sale_price = maxPrice
 
-    const data  = await callAE('aliexpress.affiliate.product.query', accessToken, extra, appSecret)
-    const resp  = data?.aliexpress_affiliate_product_query_response?.resp_result
+    const data     = await callAE('aliexpress.affiliate.product.query', extra, appSecret)
+    const resp     = data?.aliexpress_affiliate_product_query_response?.resp_result
     const products = resp?.result?.products?.product ?? []
 
     return NextResponse.json({
@@ -128,7 +149,6 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (err: any) {
-    const notConnected = err.message?.includes('não autorizado') || err.message?.includes('access_token')
-    return NextResponse.json({ error: err.message, notConnected }, { status: notConnected ? 401 : 500 })
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
