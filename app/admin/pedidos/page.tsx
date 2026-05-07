@@ -21,7 +21,7 @@ export default async function PedidosPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-playfair text-2xl text-amber-100">Pedidos</h1>
+        <h1 className="font-playfair text-2xl text-amber-100 font-semibold">Pedidos</h1>
         <p className="text-amber-700 text-sm mt-1">
           Arraste os cards para atualizar o status · {orders?.length ?? 0} pedidos carregados
         </p>

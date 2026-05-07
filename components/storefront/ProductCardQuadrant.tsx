@@ -39,7 +39,7 @@ export default function ProductCardQuadrant({ products }: ProductCardQuadrantPro
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
       {products.map((product) => {
         const image = product.images?.[0] ?? null;
         const isLiked = likedProducts.has(product.id);
@@ -50,10 +50,14 @@ export default function ProductCardQuadrant({ products }: ProductCardQuadrantPro
         return (
           <div
             key={product.id}
-            className="group relative bg-[#EDE3D6] rounded-2xl overflow-hidden hover:shadow-xl transition-shadow duration-500"
+            className="group bg-[#EDE3D6] rounded-2xl overflow-hidden hover:shadow-xl transition-shadow duration-500"
+            style={{
+              display: 'grid',
+              gridTemplateRows: '280px 1fr auto',
+            }}
           >
-            {/* Image Area */}
-            <div className="relative h-64 md:h-80 bg-[#D9CEBD] overflow-hidden">
+            {/* ── IMAGEM ── altura fixa */}
+            <div className="relative bg-[#D9CEBD] overflow-hidden">
               {image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -99,25 +103,42 @@ export default function ProductCardQuadrant({ products }: ProductCardQuadrantPro
               </div>
             </div>
 
-            {/* Product Info */}
-            <div className="p-6">
+            {/* ── CONTEÚDO ── expande com 1fr, empurra botão para baixo */}
+            <div className="p-6 pb-2">
               {product.brand && (
                 <p className="text-xs tracking-[0.25em] uppercase text-[#8B7355] mb-1">
                   {product.brand}
                 </p>
               )}
-              <h3 className="text-xl md:text-2xl font-serif font-bold text-[#1C1C1C] mb-2 leading-tight">
+              <h3
+                className="font-serif font-bold text-[#1C1C1C] mb-2 leading-tight"
+                style={{
+                  fontSize: 'clamp(1rem, 1.5vw, 1.25rem)',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
                 {product.name}
               </h3>
               {product.description && (
-                <p className="text-sm text-[#8B7355] line-clamp-2 mb-5 leading-relaxed">
+                <p
+                  className="text-sm text-[#8B7355] leading-relaxed"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
                   {product.description}
                 </p>
               )}
 
-              {/* Price */}
-              <div className="flex items-baseline gap-3 mb-6">
-                <span className="text-3xl font-serif font-black text-[#1C1C1C]">
+              {/* Preço */}
+              <div className="flex items-baseline gap-3 mt-4">
+                <span className="text-2xl font-serif font-black text-[#1C1C1C]">
                   R${' '}
                   {product.sale_price.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
@@ -132,25 +153,25 @@ export default function ProductCardQuadrant({ products }: ProductCardQuadrantPro
                   </span>
                 )}
               </div>
+            </div>
 
-              {/* CTA */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleAddToCart(product)}
-                  disabled={outOfStock}
-                  className="flex-1 py-3 px-4 bg-[#1C1C1C] text-[#F5EFE6] rounded-xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-[#2D2D2D] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
-                >
-                  <ShoppingBag size={17} />
-                  {outOfStock ? 'Esgotado' : 'Adicionar'}
-                </button>
-                <button className="w-11 h-11 rounded-xl bg-[#D9CEBD] flex items-center justify-center hover:bg-[#C9BDB0] transition-colors">
-                  <Share2 size={16} className="text-[#8B7355]" />
-                </button>
-              </div>
+            {/* ── BOTÃO ── sempre no fundo, alinhado entre cards */}
+            <div className="px-6 pb-6 pt-2 flex gap-2">
+              <button
+                onClick={() => handleAddToCart(product)}
+                disabled={outOfStock}
+                className="flex-1 py-3 px-4 bg-[#1C1C1C] text-[#F5EFE6] rounded-xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-[#2D2D2D] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
+              >
+                <ShoppingBag size={17} />
+                {outOfStock ? 'Esgotado' : 'Adicionar'}
+              </button>
+              <button className="w-11 h-11 rounded-xl bg-[#D9CEBD] flex items-center justify-center hover:bg-[#C9BDB0] transition-colors flex-shrink-0">
+                <Share2 size={16} className="text-[#8B7355]" />
+              </button>
             </div>
           </div>
         );
       })}
     </div>
   );
-}
+}3

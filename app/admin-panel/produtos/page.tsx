@@ -104,7 +104,7 @@ export default function ProdutosAdminPage() {
             onClick={() => router.push('/admin/produtos/importar')}
             className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-[#0D0805] text-xs font-bold uppercase tracking-widest transition-colors"
           >
-            ⬆ Importar CJ
+            ⬆ Importar
           </button>
         </div>
       </div>

@@ -32,7 +32,7 @@ export default async function StorefrontPage() {
     .is('deleted_at', null)
     .eq('featured', true)
     .order('created_at', { ascending: false })
-    .limit(4);
+    .limit(6);
 
   if (error) {
     console.error('Supabase fetch error:', error.message);

@@ -1,8 +1,8 @@
 import { createClient, createStaticClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ProductDetailClient } from './ProductDetailClient'
+import { ProductGallery } from './ProductGallery'   // ← NOVO IMPORT
 
 export const revalidate = 300
 
@@ -56,30 +56,30 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </nav>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-20">
+
+        {/* ══════════════════════════════════════════════════
+            COLUNA ESQUERDA — GALERIA (substituída pela nova)
+        ══════════════════════════════════════════════════ */}
         <div className="space-y-3">
-          <div className="relative aspect-square bg-[#1A0F08] border border-amber-900/20 overflow-hidden">
-            {product.images?.[0] ? (
-              <Image src={product.images[0]} alt={product.name} fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 50vw" />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-amber-900 text-6xl">◆</div>
-            )}
-            {product.compare_price && product.compare_price > product.sale_price && (
-              <div className="absolute top-4 left-4 bg-amber-600 text-[#0D0805] text-[10px] font-bold uppercase tracking-widest px-2 py-1">
-                -{Math.round((1 - product.sale_price / product.compare_price) * 100)}%
-              </div>
-            )}
-          </div>
-          {product.images?.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto">
-              {product.images.slice(0,5).map((src: string, i: number) => (
-                <div key={i} className="w-16 h-16 flex-shrink-0 border border-amber-900/20 overflow-hidden">
-                  <Image src={src} alt="" width={64} height={64} className="object-cover w-full h-full" />
-                </div>
-              ))}
+
+          {/* Badge de desconto (acima da galeria) */}
+          {product.compare_price && product.compare_price > product.sale_price && (
+            <div className="inline-flex items-center gap-1.5 bg-amber-600 text-[#0D0805] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+              -{Math.round((1 - product.sale_price / product.compare_price) * 100)}% OFF
             </div>
           )}
+
+          {/* ✅ NOVA GALERIA COM ZOOM + LIGHTBOX + SWIPE + TECLADO */}
+          <ProductGallery
+            images={product.images ?? []}
+            productName={product.name}
+          />
+
         </div>
 
+        {/* ══════════════════════════════════════════════════
+            COLUNA DIREITA — INFORMAÇÕES (igual ao original)
+        ══════════════════════════════════════════════════ */}
         <div>
           {product.tags?.length > 0 && (
             <div className="flex gap-2 flex-wrap mb-4">

@@ -22,7 +22,7 @@ export function CartDrawer() {
   const { items, isOpen, close, setQty, remove } = useCart()
   const subtotal = useCart(selectSubtotal)
   const fmt = (n: number | undefined | null) =>
-  (n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    (n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   return (
     <AnimatePresence>
@@ -40,9 +40,9 @@ export function CartDrawer() {
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.72)',
+              backgroundColor: 'rgba(0,0,0,0.4)',
               zIndex: 49,
-              backdropFilter: 'blur(2px)',
+              backdropFilter: 'blur(4px)',
             }}
           />
 
@@ -60,8 +60,8 @@ export function CartDrawer() {
               bottom: 0,
               width: '100%',
               maxWidth: '440px',
-              backgroundColor: '#100B07',
-              borderLeft: '1px solid #2a1a08',
+              backgroundColor: '#FDFAF5',
+              borderLeft: '1px solid #E8DCC8',
               zIndex: 50,
               display: 'flex',
               flexDirection: 'column',
@@ -72,11 +72,11 @@ export function CartDrawer() {
             <div
               style={{
                 padding: '1.5rem 1.75rem',
-                borderBottom: '1px solid #1f1108',
+                borderBottom: '1px solid #EDE4D0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                backgroundColor: '#0D0805',
+                backgroundColor: '#FDFAF5',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -84,11 +84,11 @@ export function CartDrawer() {
                 <h2
                   className="font-playfair"
                   style={{
-                    color: '#d97706',
+                    color: '#1C1008',
                     fontSize: '1.1rem',
                     fontWeight: 600,
                     margin: 0,
-                    letterSpacing: '0.05em',
+                    letterSpacing: '0.02em',
                   }}
                 >
                   Seu Carrinho
@@ -96,11 +96,12 @@ export function CartDrawer() {
                 {items.length > 0 && (
                   <span
                     style={{
-                      backgroundColor: '#d97706',
-                      color: '#0D0805',
-                      fontSize: '0.7rem',
+                      backgroundColor: '#C08D3A',
+                      color: '#fff',
+                      fontSize: '0.68rem',
                       fontWeight: 700,
-                      padding: '0.15rem 0.45rem',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '999px',
                       minWidth: '20px',
                       textAlign: 'center',
                     }}
@@ -114,24 +115,29 @@ export function CartDrawer() {
                 aria-label="Fechar carrinho"
                 style={{
                   background: 'none',
-                  border: '1px solid #2a1a08',
-                  color: '#92400e',
+                  border: '1px solid #D9C9A8',
+                  color: '#8C6D3F',
                   cursor: 'pointer',
                   width: '34px',
                   height: '34px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.1rem',
-                  transition: 'color 0.15s, border-color 0.15s',
+                  fontSize: '1rem',
+                  transition: 'color 0.15s, border-color 0.15s, background 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  ;(e.currentTarget as HTMLButtonElement).style.color = '#fbbf24'
-                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#d97706'
+                  const b = e.currentTarget as HTMLButtonElement
+                  b.style.color = '#1C1008'
+                  b.style.borderColor = '#8C6D3F'
+                  b.style.background = '#F0E6D0'
                 }}
                 onMouseLeave={(e) => {
-                  ;(e.currentTarget as HTMLButtonElement).style.color = '#92400e'
-                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#2a1a08'
+                  const b = e.currentTarget as HTMLButtonElement
+                  b.style.color = '#8C6D3F'
+                  b.style.borderColor = '#D9C9A8'
+                  b.style.background = 'none'
                 }}
               >
                 ✕
@@ -139,11 +145,11 @@ export function CartDrawer() {
             </div>
 
             {/* Body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.75rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem 1.75rem' }}>
               {items.length === 0 ? (
                 <EmptyCart />
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' }}>
                   {items.map((item) => (
                     <li
                       key={item.product.id}
@@ -151,17 +157,18 @@ export function CartDrawer() {
                         display: 'flex',
                         gap: '1rem',
                         padding: '1.25rem 0',
-                        borderBottom: '1px solid #1a0f06',
+                        borderBottom: '1px solid #EDE4D0',
                         alignItems: 'flex-start',
                       }}
                     >
                       {/* Imagem */}
                       <div
                         style={{
-                          width: '70px',
-                          height: '70px',
-                          backgroundColor: '#1A0F06',
-                          border: '1px solid #2a1a08',
+                          width: '72px',
+                          height: '72px',
+                          backgroundColor: '#F0E6D0',
+                          border: '1px solid #E8DCC8',
+                          borderRadius: '10px',
                           flexShrink: 0,
                           position: 'relative',
                           overflow: 'hidden',
@@ -173,7 +180,7 @@ export function CartDrawer() {
                             alt={item.product.name}
                             fill
                             style={{ objectFit: 'cover' }}
-                            sizes="70px"
+                            sizes="72px"
                           />
                         ) : (
                           <div
@@ -183,8 +190,8 @@ export function CartDrawer() {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              color: '#2a1a08',
-                              fontSize: '1.5rem',
+                              color: '#C4A96A',
+                              fontSize: '1.25rem',
                             }}
                           >
                             ◆
@@ -193,14 +200,14 @@ export function CartDrawer() {
                       </div>
 
                       {/* Info */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <p
                           style={{
                             margin: 0,
-                            color: '#fbbf24',
-                            fontSize: '0.87rem',
+                            color: '#1C1008',
+                            fontSize: '0.875rem',
                             fontWeight: 500,
-                            lineHeight: 1.3,
+                            lineHeight: 1.35,
                           }}
                         >
                           {item.product.name}
@@ -209,8 +216,8 @@ export function CartDrawer() {
                           <p
                             style={{
                               margin: 0,
-                              color: '#78350f',
-                              fontSize: '0.7rem',
+                              color: '#A07840',
+                              fontSize: '0.68rem',
                               letterSpacing: '0.08em',
                               textTransform: 'uppercase',
                             }}
@@ -225,14 +232,17 @@ export function CartDrawer() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            marginTop: '0.25rem',
+                            marginTop: '0.35rem',
                           }}
                         >
                           <div
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              border: '1px solid #2a1a08',
+                              border: '1px solid #D9C9A8',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              backgroundColor: '#F8F2E6',
                             }}
                           >
                             <QtyButton
@@ -241,13 +251,14 @@ export function CartDrawer() {
                             />
                             <span
                               style={{
-                                color: '#fbbf24',
+                                color: '#1C1008',
                                 fontSize: '0.85rem',
                                 padding: '0.3rem 0.75rem',
                                 minWidth: '32px',
                                 textAlign: 'center',
-                                borderLeft: '1px solid #2a1a08',
-                                borderRight: '1px solid #2a1a08',
+                                borderLeft: '1px solid #D9C9A8',
+                                borderRight: '1px solid #D9C9A8',
+                                fontWeight: 600,
                               }}
                             >
                               {item.quantity}
@@ -261,9 +272,9 @@ export function CartDrawer() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <span
                               style={{
-                                color: '#d97706',
+                                color: '#8C4A10',
                                 fontSize: '0.92rem',
-                                fontWeight: 600,
+                                fontWeight: 700,
                               }}
                             >
                               {fmt(item.product.salePrice * item.quantity)}
@@ -274,9 +285,9 @@ export function CartDrawer() {
                               style={{
                                 background: 'none',
                                 border: 'none',
-                                color: '#78350f',
+                                color: '#B0916A',
                                 cursor: 'pointer',
-                                fontSize: '0.75rem',
+                                fontSize: '0.72rem',
                                 padding: 0,
                                 textDecoration: 'underline',
                                 textUnderlineOffset: '2px',
@@ -297,12 +308,12 @@ export function CartDrawer() {
             {items.length > 0 && (
               <div
                 style={{
-                  padding: '1.5rem 1.75rem',
-                  borderTop: '1px solid #2a1a08',
-                  backgroundColor: '#0D0805',
+                  padding: '1.25rem 1.75rem 1.5rem',
+                  borderTop: '1px solid #EDE4D0',
+                  backgroundColor: '#F8F2E6',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '1rem',
+                  gap: '0.875rem',
                 }}
               >
                 {/* Subtotal */}
@@ -315,9 +326,9 @@ export function CartDrawer() {
                 >
                   <span
                     style={{
-                      color: '#78350f',
+                      color: '#8C6D3F',
                       fontSize: '0.7rem',
-                      letterSpacing: '0.15em',
+                      letterSpacing: '0.12em',
                       textTransform: 'uppercase',
                     }}
                   >
@@ -325,7 +336,7 @@ export function CartDrawer() {
                   </span>
                   <span
                     className="font-playfair"
-                    style={{ color: '#fbbf24', fontSize: '1.25rem', fontWeight: 600 }}
+                    style={{ color: '#1C1008', fontSize: '1.3rem', fontWeight: 700 }}
                   >
                     {fmt(subtotal)}
                   </span>
@@ -334,9 +345,9 @@ export function CartDrawer() {
                 <p
                   style={{
                     margin: 0,
-                    color: '#78350f',
+                    color: '#B0916A',
                     fontSize: '0.72rem',
-                    letterSpacing: '0.03em',
+                    letterSpacing: '0.02em',
                   }}
                 >
                   Frete calculado no checkout
@@ -349,21 +360,22 @@ export function CartDrawer() {
                   style={{
                     display: 'block',
                     textAlign: 'center',
-                    backgroundColor: '#d97706',
-                    color: '#0D0805',
-                    padding: '0.9rem',
-                    fontSize: '0.85rem',
+                    backgroundColor: '#1C1008',
+                    color: '#F8F2E6',
+                    padding: '0.95rem',
+                    borderRadius: '10px',
+                    fontSize: '0.82rem',
                     fontWeight: 700,
-                    letterSpacing: '0.12em',
+                    letterSpacing: '0.1em',
                     textTransform: 'uppercase',
                     textDecoration: 'none',
                     transition: 'background-color 0.15s',
                   }}
                   onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#b45309')
+                    ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#3D2010')
                   }
                   onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#d97706')
+                    ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#1C1008')
                   }
                 >
                   Finalizar Compra
@@ -373,23 +385,28 @@ export function CartDrawer() {
                   onClick={close}
                   style={{
                     background: 'none',
-                    border: '1px solid #2a1a08',
-                    color: '#92400e',
+                    border: '1px solid #D9C9A8',
+                    color: '#8C6D3F',
                     padding: '0.75rem',
-                    fontSize: '0.8rem',
-                    letterSpacing: '0.1em',
+                    borderRadius: '10px',
+                    fontSize: '0.78rem',
+                    letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
                     width: '100%',
-                    transition: 'border-color 0.15s, color 0.15s',
+                    transition: 'border-color 0.15s, color 0.15s, background 0.15s',
                   }}
                   onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.color = '#d97706'
-                    ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#92400e'
+                    const b = e.currentTarget as HTMLButtonElement
+                    b.style.color = '#1C1008'
+                    b.style.borderColor = '#8C6D3F'
+                    b.style.background = '#EDE4D0'
                   }}
                   onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.color = '#92400e'
-                    ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#2a1a08'
+                    const b = e.currentTarget as HTMLButtonElement
+                    b.style.color = '#8C6D3F'
+                    b.style.borderColor = '#D9C9A8'
+                    b.style.background = 'none'
                   }}
                 >
                   Continuar Comprando
@@ -412,7 +429,7 @@ function QtyButton({ onClick, label }: { onClick: () => void; label: string }) {
       style={{
         background: 'none',
         border: 'none',
-        color: '#d97706',
+        color: '#8C4A10',
         cursor: 'pointer',
         width: '32px',
         height: '32px',
@@ -422,8 +439,8 @@ function QtyButton({ onClick, label }: { onClick: () => void; label: string }) {
         justifyContent: 'center',
         transition: 'color 0.1s',
       }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#fbbf24')}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#d97706')}
+      onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#1C1008')}
+      onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = '#8C4A10')}
     >
       {label}
     </button>
@@ -437,10 +454,10 @@ function BagIcon() {
       height="18"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#d97706"
+      stroke="#8C4A10"
       strokeWidth="1.5"
-      strokeLinecap="square"
-      strokeLinejoin="miter"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
       <line x1="3" y1="6" x2="21" y2="6" />
@@ -467,11 +484,13 @@ function EmptyCart() {
         style={{
           width: '64px',
           height: '64px',
-          border: '1px solid #2a1a08',
+          border: '1px solid #D9C9A8',
+          borderRadius: '16px',
+          backgroundColor: '#F0E6D0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#2a1a08',
+          color: '#C4A96A',
           fontSize: '1.5rem',
         }}
       >
@@ -481,7 +500,7 @@ function EmptyCart() {
         <p
           className="font-playfair"
           style={{
-            color: '#92400e',
+            color: '#1C1008',
             fontSize: '1rem',
             margin: 0,
             fontStyle: 'italic',
@@ -491,10 +510,10 @@ function EmptyCart() {
         </p>
         <p
           style={{
-            color: '#78350f',
+            color: '#8C6D3F',
             fontSize: '0.78rem',
             margin: 0,
-            letterSpacing: '0.05em',
+            letterSpacing: '0.03em',
             lineHeight: 1.6,
           }}
         >

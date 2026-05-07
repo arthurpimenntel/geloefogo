@@ -15,11 +15,11 @@ const REGION_MAP: Record<string, string> = {
 }
 
 const REGION_INFO: Record<string, { label: string; prazo: string }> = {
-  norte:      { label: 'Norte',        prazo: '7–12 dias úteis' },
-  nordeste:   { label: 'Nordeste',     prazo: '5–8 dias úteis'  },
-  centroeste: { label: 'Centro-Oeste', prazo: '4–6 dias úteis'  },
-  sudeste:    { label: 'Sudeste',      prazo: '2–4 dias úteis'  },
-  sul:        { label: 'Sul',          prazo: '3–5 dias úteis'  },
+  norte:      { label: 'Norte',        prazo: '25–55 dias úteis' },
+  nordeste:   { label: 'Nordeste',     prazo: '22-45 dias úteis'  },
+  centroeste: { label: 'Centro-Oeste', prazo: '20–40 dias úteis'  },
+  sudeste:    { label: 'Sudeste',      prazo: '15–35 dias úteis'  },
+  sul:        { label: 'Sul',          prazo: '18–38 dias úteis'  },
 }
 
 const REGION_COLORS: Record<string, string> = {

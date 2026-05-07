@@ -7,11 +7,9 @@ import { useCart } from '@/hooks/useCart'
 import { CartDrawer } from './CartDrawer'
 
 const NAV_LINKS = [
-  { href: '/catalogo?categoria=charutos',    label: 'Charutos' },
-  { href: '/catalogo?categoria=cachimbos',   label: 'Cachimbos' },
-  { href: '/catalogo?categoria=acessorios',  label: 'Acessórios' },
-  { href: '/catalogo?categoria=narguiles',   label: 'Narguilés' },
-  { href: '/catalogo',                       label: 'Ver Tudo' },
+  { href: '/catalogo?destaque=true', label: 'Destaques' },
+  { href: '/catalogo?ordem=recente', label: 'Novidades' },
+  { href: '/catalogo',               label: 'Ver Tudo' },
 ]
 
 export function Navbar() {
@@ -63,7 +61,7 @@ export function Navbar() {
           <nav className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map(({ href, label }) => (
               <Link
-                key={href}
+                key={label}
                 href={href}
                 className="text-[11px] uppercase tracking-[0.2em] text-[#8B7355] hover:text-[#1C1C1C] transition-colors duration-200 relative group"
               >
@@ -143,7 +141,7 @@ export function Navbar() {
               <nav className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1">
                 {NAV_LINKS.map(({ href, label }, i) => (
                   <motion.div
-                    key={href}
+                    key={label}
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}

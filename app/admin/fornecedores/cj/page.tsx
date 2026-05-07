@@ -2,23 +2,22 @@
 
 import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
 
 interface CJProduct {
   id: string
   nameEn: string
   sku: string
-  spu: string
   bigImage: string
   sellPrice: string
-  nowPrice: string
-  oneCategoryName: string
-  twoCategoryName: string
-  threeCategoryName: string
+  nowPrice: string | null
+  oneCategoryName: string | null
+  twoCategoryName: string | null
+  threeCategoryName: string | null
   warehouseInventoryNum: number
   totalVerifiedInventory: number
   supplierName: string
   listedNum: number
+  detail_url: string | null
 }
 
 const SUGESTOES = [
@@ -28,7 +27,7 @@ const SUGESTOES = [
 ]
 
 export default function CJImportPage() {
-  const supabase =  createClient()
+  const supabase = createClient()
 
   const [keyword,    setKeyword]    = useState('')
   const [minPrice,   setMinPrice]   = useState('')
@@ -42,28 +41,24 @@ export default function CJImportPage() {
   const [loading,    setLoading]    = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
-  const [importing,  setImporting]  = useState<string | null>(null) // product id sendo importado
+  const [importing,  setImporting]  = useState<string | null>(null)
   const [imported,   setImported]   = useState<Set<string>>(new Set())
   const [supplierId, setSupplierId] = useState<string | null>(null)
 
-  // Busca o supplier_id do CJ no banco
   const getSupplierId = useCallback(async () => {
     if (supplierId) return supplierId
     const { data } = await supabase
       .from('suppliers')
       .select('id')
       .ilike('name', '%cj%')
-      .single()
+      .maybeSingle()
     if (data?.id) setSupplierId(data.id)
     return data?.id || null
   }, [supplierId, supabase])
 
   async function search(p = 1) {
     if (!keyword.trim()) return
-    setLoading(true)
-    setError(null)
-    setPage(p)
-
+    setLoading(true); setError(null); setPage(p)
     try {
       const params = new URLSearchParams({
         action: 'search',
@@ -75,16 +70,14 @@ export default function CJImportPage() {
       })
       const res  = await fetch(`/api/cj?${params}`)
       const data = await res.json()
-
-      if (!data.result) throw new Error(data.message || 'Erro ao buscar produtos no CJ')
-
-      const content = data.data?.content?.[0]?.productList || data.data?.list || []
-      setProducts(content)
+      if (data.error) throw new Error(data.error)
+      if (!data.result) throw new Error(data.message || 'Erro ao buscar produtos')
+      const list = data.data?.list ?? []
+      setProducts(list)
       setTotal(data.data?.totalRecords || 0)
-      setTotalPages(data.data?.totalPages || 1)
+      setTotalPages(Math.ceil((data.data?.totalRecords || 0) / 20))
     } catch (err: any) {
-      setError(err.message)
-      setProducts([])
+      setError(err.message); setProducts([])
     } finally {
       setLoading(false)
     }
@@ -97,14 +90,10 @@ export default function CJImportPage() {
       const res = await fetch('/api/cj', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product,
-          markup_pct: parseFloat(markup) || 100,
-          supplier_id: sid,
-        }),
+        body: JSON.stringify({ product, markup_pct: parseFloat(markup) || 100, supplier_id: sid }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erro ao importar')
+      if (!res.ok || data.error) throw new Error(data.error || 'Erro ao importar')
       setImported(prev => new Set([...prev, product.id]))
     } catch (err: any) {
       setError(err.message)
@@ -123,7 +112,7 @@ export default function CJImportPage() {
       <div className="mb-8">
         <h1 className="font-playfair text-2xl text-amber-100">Importar via CJDropshipping</h1>
         <p className="text-amber-700 text-sm mt-1">
-          Busque produtos e importe com um clique para o catálogo
+          Busque produtos via CJ e importe com um clique
         </p>
       </div>
 
@@ -148,7 +137,7 @@ export default function CJImportPage() {
           </button>
         </div>
 
-        {/* Sugestões rápidas */}
+        {/* Sugestões */}
         <div className="flex flex-wrap gap-2 mb-4">
           {SUGESTOES.map(s => (
             <button
@@ -166,34 +155,25 @@ export default function CJImportPage() {
         {/* Filtros avançados */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div>
-            <label className="text-amber-800 text-[10px] uppercase tracking-widest block mb-1">
-              Preço mín (USD)
-            </label>
+            <label className="text-amber-800 text-[10px] uppercase tracking-widest block mb-1">Preço mín (USD)</label>
             <input
-              type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)}
-              placeholder="0.00"
+              type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="0.00"
               className="w-full bg-[#0D0805] border border-amber-900/40 text-amber-100
                 px-3 py-2 text-sm focus:outline-none focus:border-amber-600 placeholder:text-amber-900"
             />
           </div>
           <div>
-            <label className="text-amber-800 text-[10px] uppercase tracking-widest block mb-1">
-              Preço máx (USD)
-            </label>
+            <label className="text-amber-800 text-[10px] uppercase tracking-widest block mb-1">Preço máx (USD)</label>
             <input
-              type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
-              placeholder="999.00"
+              type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="999.00"
               className="w-full bg-[#0D0805] border border-amber-900/40 text-amber-100
                 px-3 py-2 text-sm focus:outline-none focus:border-amber-600 placeholder:text-amber-900"
             />
           </div>
           <div>
-            <label className="text-amber-800 text-[10px] uppercase tracking-widest block mb-1">
-              Markup (%)
-            </label>
+            <label className="text-amber-800 text-[10px] uppercase tracking-widest block mb-1">Markup (%)</label>
             <input
-              type="number" value={markup} onChange={e => setMarkup(e.target.value)}
-              placeholder="100"
+              type="number" value={markup} onChange={e => setMarkup(e.target.value)} placeholder="100"
               className="w-full bg-[#0D0805] border border-amber-900/40 text-amber-100
                 px-3 py-2 text-sm focus:outline-none focus:border-amber-600 placeholder:text-amber-900"
             />
@@ -201,14 +181,12 @@ export default function CJImportPage() {
         </div>
       </div>
 
-      {/* Erro */}
       {error && (
         <div className="mb-4 bg-red-900/20 border border-red-800/40 px-4 py-3 text-red-300 text-sm">
           ❌ {error}
         </div>
       )}
 
-      {/* Resultados */}
       {products.length > 0 && (
         <>
           <div className="flex items-center justify-between mb-4">
@@ -222,9 +200,9 @@ export default function CJImportPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
             {products.map(product => {
-              const cost      = parseFloat(product.sellPrice || product.nowPrice || '0')
-              const salePrice = calcSalePrice(product)
-              const isImported = imported.has(product.id)
+              const cost        = parseFloat(product.sellPrice || product.nowPrice || '0')
+              const salePrice   = calcSalePrice(product)
+              const isImported  = imported.has(product.id)
               const isImporting = importing === product.id
 
               return (
@@ -234,7 +212,6 @@ export default function CJImportPage() {
                     isImported ? 'border-green-700/50' : 'border-amber-900/20 hover:border-amber-800/40'
                   }`}
                 >
-                  {/* Imagem */}
                   <div className="aspect-square relative bg-[#0D0805] overflow-hidden">
                     {product.bigImage ? (
                       <img
@@ -243,9 +220,7 @@ export default function CJImportPage() {
                         className="w-full h-full object-contain p-2"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-amber-900 text-3xl">
-                        📦
-                      </div>
+                      <div className="w-full h-full flex items-center justify-center text-amber-900 text-3xl">📦</div>
                     )}
                     {isImported && (
                       <div className="absolute inset-0 bg-green-900/60 flex items-center justify-center">
@@ -254,14 +229,25 @@ export default function CJImportPage() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="p-3 flex flex-col flex-1">
                     <p className="text-amber-200 text-xs font-medium leading-tight mb-1 line-clamp-2">
                       {product.nameEn}
                     </p>
                     <p className="text-amber-800 text-[10px] mb-2 line-clamp-1">
-                      {product.threeCategoryName || product.twoCategoryName}
+                      {product.twoCategoryName || product.oneCategoryName || 'CJDropshipping'}
                     </p>
+
+                    {product.detail_url && (
+                      <a
+                        href={product.detail_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-amber-800 hover:text-amber-600 text-[10px] mb-2 underline"
+                      >
+                        Ver no CJ ↗
+                      </a>
+                    )}
 
                     <div className="mt-auto space-y-1">
                       <div className="flex justify-between text-[11px]">
@@ -274,9 +260,7 @@ export default function CJImportPage() {
                       </div>
                       <div className="flex justify-between text-[11px]">
                         <span className="text-amber-800">Estoque:</span>
-                        <span className={product.totalVerifiedInventory > 0 ? 'text-green-500' : 'text-red-500'}>
-                          {product.totalVerifiedInventory ?? product.warehouseInventoryNum ?? '?'}
-                        </span>
+                        <span className="text-amber-600">{(product.warehouseInventoryNum ?? 0).toLocaleString()}</span>
                       </div>
                     </div>
 
@@ -300,7 +284,6 @@ export default function CJImportPage() {
             })}
           </div>
 
-          {/* Paginação */}
           <div className="flex items-center justify-center gap-2">
             <button
               onClick={() => search(page - 1)}
@@ -310,9 +293,7 @@ export default function CJImportPage() {
             >
               ← Anterior
             </button>
-            <span className="text-amber-700 text-xs px-4">
-              {page} / {totalPages}
-            </span>
+            <span className="text-amber-700 text-xs px-4">{page} / {totalPages}</span>
             <button
               onClick={() => search(page + 1)}
               disabled={page >= totalPages || loading}
@@ -325,16 +306,17 @@ export default function CJImportPage() {
         </>
       )}
 
-      {/* Estado vazio */}
       {!loading && products.length === 0 && !error && (
         <div className="text-center py-20 text-amber-900">
-          <p className="text-4xl mb-4">🔍</p>
-          <p className="text-sm uppercase tracking-widest">
-            Busque um produto para começar a importar
-          </p>
-          <p className="text-xs mt-2">
-            Tente: hookah, grinder, rolling tray, shisha...
-          </p>
+          <p className="text-4xl mb-4">📦</p>
+          <p className="text-sm uppercase tracking-widest">Busque um produto para começar a importar</p>
+          <p className="text-xs mt-2">Tente: hookah, grinder, rolling tray, shisha...</p>
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center py-20 text-amber-700 text-xs uppercase tracking-widest animate-pulse">
+          Buscando produtos no CJDropshipping...
         </div>
       )}
     </div>
