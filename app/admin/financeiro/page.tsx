@@ -16,24 +16,24 @@ export default async function FinanceiroPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-playfair text-2xl text-amber-100">Financeiro</h1>
-        <p className="text-amber-700 text-sm mt-1">Conciliação de pagamentos aprovados</p>
+        <h1 className="font-playfair text-2xl text-[#1C1008]">Financeiro</h1>
+        <p className="text-[#8C6D3F] text-sm mt-1">Conciliação de pagamentos aprovados</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-[#1A0F08] border border-amber-900/20 p-5">
-          <p className="text-amber-700 text-xs uppercase tracking-widest">Total Recebido</p>
-          <p className="font-playfair text-2xl text-amber-300 mt-2">
+        <div className="bg-white border border-[#E8DCC8] rounded-2xl shadow-sm p-5">
+          <p className="text-[#8C6D3F] text-xs uppercase tracking-widest">Total Recebido</p>
+          <p className="font-playfair text-2xl text-[#C08D3A] mt-2">
             {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </div>
-        <div className="bg-[#1A0F08] border border-amber-900/20 p-5">
-          <p className="text-amber-700 text-xs uppercase tracking-widest">Transações</p>
-          <p className="font-playfair text-2xl text-amber-300 mt-2">{payments?.length ?? 0}</p>
+        <div className="bg-white border border-[#E8DCC8] rounded-2xl shadow-sm p-5">
+          <p className="text-[#8C6D3F] text-xs uppercase tracking-widest">Transações</p>
+          <p className="font-playfair text-2xl text-[#1C1008] mt-2">{payments?.length ?? 0}</p>
         </div>
-        <div className="bg-[#1A0F08] border border-amber-900/20 p-5">
-          <p className="text-amber-700 text-xs uppercase tracking-widest">Ticket Médio</p>
-          <p className="font-playfair text-2xl text-amber-300 mt-2">
+        <div className="bg-white border border-[#E8DCC8] rounded-2xl shadow-sm p-5">
+          <p className="text-[#8C6D3F] text-xs uppercase tracking-widest">Ticket Médio</p>
+          <p className="font-playfair text-2xl text-[#C08D3A] mt-2">
             {payments?.length
               ? (total / payments.length).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
               : 'R$0,00'}
@@ -41,27 +41,27 @@ export default async function FinanceiroPage() {
         </div>
       </div>
 
-      <div className="bg-[#1A0F08] border border-amber-900/20 overflow-hidden">
+      <div className="bg-white border border-[#E8DCC8] rounded-2xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-amber-900/20">
+            <tr className="bg-[#FAF7F2] border-b border-[#E8DCC8]">
               {['Data', 'Pedido', 'Método', 'Gateway', 'Valor'].map(h => (
-                <th key={h} className="text-left py-3 px-4 text-amber-700 text-xs uppercase tracking-widest font-normal">{h}</th>
+                <th key={h} className="text-left py-3 px-4 text-[#8C6D3F] text-xs uppercase tracking-widest font-normal">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {(payments ?? []).map(p => (
-              <tr key={p.id} className="border-b border-amber-900/10 hover:bg-amber-900/10">
-                <td className="py-3 px-4 text-amber-700 text-xs">
+              <tr key={p.id} className="border-b border-[#F0E8D8] hover:bg-[#FAF7F2] transition-colors">
+                <td className="py-3 px-4 text-[#B0916A] text-xs">
                   {new Date(p.created_at).toLocaleDateString('pt-BR')}
                 </td>
-                <td className="py-3 px-4 text-amber-500 font-mono text-xs">
+                <td className="py-3 px-4 text-[#C08D3A] font-mono text-xs">
                   #{(p.order as any)?.id?.slice(0, 8)}
                 </td>
-                <td className="py-3 px-4 text-amber-600 text-xs capitalize">{p.method}</td>
-                <td className="py-3 px-4 text-amber-700 text-xs">{p.provider}</td>
-                <td className="py-3 px-4 text-amber-300 font-medium">
+                <td className="py-3 px-4 text-[#6B4F2A] text-xs capitalize">{p.method}</td>
+                <td className="py-3 px-4 text-[#B0916A] text-xs">{p.provider}</td>
+                <td className="py-3 px-4 text-[#1C1008] font-semibold">
                   {p.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </td>
               </tr>

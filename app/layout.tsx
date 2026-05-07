@@ -2,7 +2,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
 import { ServiceWorkerRegister } from '@/components/effects/ServiceWorkerRegister'
-import SmokeBackgroundWrapper from '@/components/effects/SmokeBackgroundWrapper'
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -29,7 +28,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#C9963A',
+  themeColor: '#C08D3A',
 }
 
 export default function RootLayout({
@@ -39,15 +38,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className={`${playfair.variable} ${dmSans.variable}`}>
-      <body className="bg-[#0D0805] font-sans antialiased relative">
-        {/* Smoke Background - zIndex 0 (padrão) */}
-        <SmokeBackgroundWrapper />
-        
-        {/* Conteúdo principal - zIndex maior */}
-        <main className="relative z-10">
+      <body className="bg-[#FAF7F2] font-sans antialiased">
+        <main className="relative">
           {children}
         </main>
-        
+
         <ServiceWorkerRegister />
       </body>
     </html>

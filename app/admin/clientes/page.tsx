@@ -14,16 +14,16 @@ export default async function ClientesPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-playfair text-2xl text-amber-100">Clientes</h1>
-        <p className="text-amber-700 text-sm mt-1">{clients?.length ?? 0} clientes cadastrados</p>
+        <h1 className="font-playfair text-2xl text-[#1C1008]">Clientes</h1>
+        <p className="text-[#8C6D3F] text-sm mt-1">{clients?.length ?? 0} clientes cadastrados</p>
       </div>
 
-      <div className="bg-[#1A0F08] border border-amber-900/20 overflow-hidden">
+      <div className="bg-white border border-[#E8DCC8] rounded-2xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-amber-900/20">
+            <tr className="bg-[#FAF7F2] border-b border-[#E8DCC8]">
               {['Cliente', 'Telefone', 'Pontos', 'Tags', 'Desde', 'Ações'].map(h => (
-                <th key={h} className="text-left py-3 px-4 text-amber-700 text-xs uppercase tracking-widest font-normal">
+                <th key={h} className="text-left py-3 px-4 text-[#8C6D3F] text-xs uppercase tracking-widest font-normal">
                   {h}
                 </th>
               ))}
@@ -31,29 +31,29 @@ export default async function ClientesPage() {
           </thead>
           <tbody>
             {(clients ?? []).map(c => (
-              <tr key={c.id} className="border-b border-amber-900/10 hover:bg-amber-900/10 transition-colors">
+              <tr key={c.id} className="border-b border-[#F0E8D8] hover:bg-[#FAF7F2] transition-colors">
                 <td className="py-3 px-4">
-                  <p className="text-amber-200">{c.full_name ?? '—'}</p>
-                  <p className="text-amber-800 text-xs font-mono">{c.cpf ?? '—'}</p>
+                  <p className="text-[#1C1008] font-medium">{c.full_name ?? '—'}</p>
+                  <p className="text-[#B0916A] text-xs font-mono">{c.cpf ?? '—'}</p>
                 </td>
-                <td className="py-3 px-4 text-amber-600 text-xs">{c.phone ?? '—'}</td>
-                <td className="py-3 px-4 text-amber-400">{c.points ?? 0} pts</td>
+                <td className="py-3 px-4 text-[#6B4F2A] text-xs">{c.phone ?? '—'}</td>
+                <td className="py-3 px-4 text-[#C08D3A] font-medium">{c.points ?? 0} pts</td>
                 <td className="py-3 px-4">
                   <div className="flex gap-1 flex-wrap">
                     {(c.tags ?? []).map((tag: string) => (
                       <span key={tag}
-                        className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-500 border border-amber-900/50">
+                        className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#F5EFE6] text-[#8C4A10] border border-[#D9C9A8]">
                         {tag}
                       </span>
                     ))}
                   </div>
                 </td>
-                <td className="py-3 px-4 text-amber-800 text-xs">
+                <td className="py-3 px-4 text-[#B0916A] text-xs">
                   {new Date(c.created_at).toLocaleDateString('pt-BR')}
                 </td>
                 <td className="py-3 px-4">
                   <a href={`/admin/clientes/${c.id}`}
-                    className="text-amber-700 hover:text-amber-400 text-xs transition-colors">
+                    className="text-[#C08D3A] hover:text-[#8C4A10] text-xs font-medium transition-colors">
                     Ver
                   </a>
                 </td>

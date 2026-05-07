@@ -6,9 +6,9 @@ import { useCart } from '@/hooks/useCart'
 import type { Product } from '@/types/domain.types'
 
 export function ProductDetailClient({ product }: { product: Product }) {
-  const [qty,     setQty]     = useState(1)
-  const [adding,  setAdding]  = useState(false)
-  const [added,   setAdded]   = useState(false)
+  const [qty,    setQty]   = useState(1)
+  const [adding, setAdding] = useState(false)
+  const [added,  setAdded]  = useState(false)
   const { add, open } = useCart()
 
   async function handleAdd() {
@@ -29,20 +29,23 @@ export function ProductDetailClient({ product }: { product: Product }) {
       {/* Qty selector */}
       {product.stock > 0 && (
         <div className="flex items-center gap-4">
-          <p className="text-amber-700 text-[11px] uppercase tracking-widest">Quantidade</p>
-          <div className="flex items-center border border-amber-900/40">
+          <p className="text-[#8C6D3F] text-[11px] uppercase tracking-widest font-medium">Quantidade</p>
+          <div className="flex items-center border border-[#D9C9A8] rounded-xl overflow-hidden bg-white">
             <button
               onClick={() => setQty(q => Math.max(1, q - 1))}
-              className="w-9 h-9 text-amber-600 hover:text-amber-300 text-lg transition-colors
-                flex items-center justify-center"
+              className="w-9 h-9 text-[#8C4A10] hover:text-[#1C1008] hover:bg-[#F5EFE6]
+                text-lg transition-colors flex items-center justify-center"
             >
               −
             </button>
-            <span className="w-10 text-center text-amber-200 text-sm">{qty}</span>
+            <span className="w-10 text-center text-[#1C1008] text-sm font-semibold
+              border-x border-[#D9C9A8]">
+              {qty}
+            </span>
             <button
               onClick={() => setQty(q => Math.min(maxQty, q + 1))}
-              className="w-9 h-9 text-amber-600 hover:text-amber-300 text-lg transition-colors
-                flex items-center justify-center"
+              className="w-9 h-9 text-[#8C4A10] hover:text-[#1C1008] hover:bg-[#F5EFE6]
+                text-lg transition-colors flex items-center justify-center"
             >
               +
             </button>
@@ -50,24 +53,20 @@ export function ProductDetailClient({ product }: { product: Product }) {
         </div>
       )}
 
-      {/* Add to cart button */}
+      {/* Add to cart */}
       <button
         onClick={handleAdd}
         disabled={adding || product.stock === 0}
         className="relative w-full py-4 overflow-hidden transition-all duration-200
-          disabled:opacity-50 disabled:cursor-not-allowed
-          bg-amber-700 hover:bg-amber-600 text-[#0D0805]
+          disabled:opacity-50 disabled:cursor-not-allowed rounded-xl
+          bg-[#1C1008] hover:bg-[#3D2010] text-white
           text-sm font-bold uppercase tracking-[0.2em]"
       >
         <AnimatePresence mode="wait">
           {added ? (
-            <motion.span
-              key="added"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="block"
-            >
+            <motion.span key="added"
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              className="block">
               ✓ Adicionado ao carrinho
             </motion.span>
           ) : adding ? (
@@ -79,12 +78,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
               Produto Esgotado
             </motion.span>
           ) : (
-            <motion.span
-              key="normal"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="block"
-            >
+            <motion.span key="normal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="block">
               Adicionar ao Carrinho
             </motion.span>
           )}
@@ -96,9 +90,9 @@ export function ProductDetailClient({ product }: { product: Product }) {
         <a
           href="/checkout"
           onClick={() => { add(product, qty) }}
-          className="block w-full py-3 border border-amber-700/60 text-amber-500
-            hover:border-amber-500 hover:text-amber-300 text-center text-xs
-            uppercase tracking-[0.2em] transition-colors"
+          className="block w-full py-3 rounded-xl border border-[#D9C9A8] text-[#6B4F2A]
+            hover:border-[#C08D3A] hover:text-[#1C1008] hover:bg-[#F5EFE6]
+            text-center text-xs uppercase tracking-[0.2em] transition-all"
         >
           Comprar Agora
         </a>

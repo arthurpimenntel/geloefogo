@@ -6,15 +6,13 @@
 }
 
 :root {
-  --bg-base:     #0D0805;
-  --bg-card:     #100B07;
-  --bg-card-alt: #1A0F06;
-  --cream:       #F5ECD7;
+  --bg-base:     #FAF7F2;
+  --bg-card:     #FFFFFF;
+  --bg-card-alt: #F5EFE6;
+  --cream:       #1C1008;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-
-
 
 /* Mobile: restore cursor */
 @media (pointer: coarse) {
@@ -32,11 +30,11 @@ body {
 .font-playfair { font-family: var(--font-playfair), 'Playfair Display', Georgia, serif; }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0D0805; }
-::-webkit-scrollbar-thumb { background: #92400e; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #d97706; }
+::-webkit-scrollbar-track { background: #FAF7F2; }
+::-webkit-scrollbar-thumb { background: #D9C9A8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #C08D3A; }
 
-::selection { background: rgba(217,119,6,0.3); color: #fef3c7; }
+::selection { background: rgba(192,141,58,0.2); color: #1C1008; }
 
 /* ── Marquee ─────────────────────────────────────────────────────────── */
 @keyframes marquee {
@@ -58,7 +56,7 @@ body {
   100% { background-position:  200% center; }
 }
 .shimmer-gold {
-  background: linear-gradient(90deg, #d97706 0%, #fcd34d 40%, #d97706 60%, #d97706 100%);
+  background: linear-gradient(90deg, #C08D3A 0%, #E8C06A 40%, #C08D3A 60%, #C08D3A 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -77,13 +75,8 @@ body {
 
 /* ── Mobile responsive overrides ────────────────────────────────────── */
 @media (max-width: 640px) {
-  /* Ensure hero text is readable on mobile */
   .hero-title { font-size: clamp(2.5rem, 10vw, 5rem) !important; }
-
-  /* Admin kanban scrollable */
   .kanban-scroll { -webkit-overflow-scrolling: touch; }
-
-  /* Table responsive */
   .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 

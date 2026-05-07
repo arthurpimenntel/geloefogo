@@ -16,8 +16,8 @@ const DEFAULTS: Settings = {
   whatsapp_number: '', store_active: true,
 }
 
-const INPUT = `bg-[#0D0805] border border-amber-900/40 text-amber-100 px-4 py-2.5 text-sm
-  focus:outline-none focus:border-amber-600 transition-colors placeholder:text-amber-900 w-full`
+const INPUT = `bg-white border border-[#E8DCC8] rounded-xl text-[#1C1008] px-4 py-2.5 text-sm
+  focus:outline-none focus:border-[#C08D3A] transition-colors placeholder:text-[#B0916A] w-full`
 
 export default function ConfiguracoesPage() {
   const supabase = createClient()
@@ -70,17 +70,17 @@ export default function ConfiguracoesPage() {
     finally { setSaving(false) }
   }
 
-  if (loading) return <div className="flex items-center justify-center py-20"><p className="text-amber-700 text-sm animate-pulse">Carregando...</p></div>
+  if (loading) return <div className="flex items-center justify-center py-20"><p className="text-[#B0916A] text-sm animate-pulse">Carregando...</p></div>
 
   return (
     <div className="max-w-2xl">
       <div className="mb-8">
-        <h1 className="font-playfair text-2xl text-amber-100">Configurações</h1>
-        <p className="text-amber-700 text-sm mt-1">Ajustes gerais da loja</p>
+        <h1 className="font-playfair text-2xl text-[#1C1008]">Configurações</h1>
+        <p className="text-[#8C6D3F] text-sm mt-1">Ajustes gerais da loja</p>
       </div>
 
-      {saved  && <div className="mb-6 bg-green-900/20 border border-green-700/40 px-5 py-3 text-green-300 text-sm">✅ Configurações salvas!</div>}
-      {error  && <div className="mb-6 bg-red-900/20 border border-red-700/40 px-5 py-3 text-red-300 text-sm">❌ {error}</div>}
+      {saved  && <div className="mb-6 bg-green-50 border border-green-200 rounded-xl px-5 py-3 text-green-700 text-sm">✅ Configurações salvas!</div>}
+      {error  && <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-5 py-3 text-red-600 text-sm">❌ {error}</div>}
 
       <form onSubmit={handleSave} className="space-y-6">
         <Section title="Informações da Loja">
@@ -107,7 +107,7 @@ export default function ConfiguracoesPage() {
         </Section>
 
         <button type="submit" disabled={saving}
-          className="px-8 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-[#0D0805] text-xs font-bold uppercase tracking-widest transition-colors">
+          className="px-8 py-3 bg-[#1C1008] hover:bg-[#3D2010] disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
           {saving ? 'Salvando...' : '✓ Salvar Configurações'}
         </button>
       </form>
@@ -117,8 +117,8 @@ export default function ConfiguracoesPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-[#1A0F08] border border-amber-900/20 p-6 space-y-4">
-      <h2 className="text-amber-500 text-[10px] uppercase tracking-[0.25em] mb-2">{title}</h2>
+    <section className="bg-white border border-[#E8DCC8] rounded-2xl shadow-sm p-6 space-y-4">
+      <h2 className="text-[#8C6D3F] text-[10px] uppercase tracking-[0.25em] mb-2">{title}</h2>
       {children}
     </section>
   )
@@ -127,8 +127,8 @@ function Row({ label, children, help }: { label: string; children: React.ReactNo
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
-        <label className="text-amber-700 text-[11px] uppercase tracking-widest">{label}</label>
-        {help && <span className="text-amber-900 text-[10px]">— {help}</span>}
+        <label className="text-[#8C6D3F] text-[10px] uppercase tracking-widest font-medium">{label}</label>
+        {help && <span className="text-[#B0916A] text-[10px]">— {help}</span>}
       </div>
       {children}
     </div>
@@ -137,10 +137,10 @@ function Row({ label, children, help }: { label: string; children: React.ReactNo
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <label className="flex items-center gap-3 cursor-pointer" onClick={() => onChange(!checked)}>
-      <div className={`w-10 h-5 rounded-full relative transition-colors ${checked ? 'bg-amber-600' : 'bg-amber-900/40'}`}>
-        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
+      <div className={`w-10 h-5 rounded-full relative transition-colors ${checked ? 'bg-[#C08D3A]' : 'bg-[#D9C9A8]'}`}>
+        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`} />
       </div>
-      <span className="text-amber-400 text-sm">{label}</span>
+      <span className="text-[#6B4F2A] text-sm">{checked ? label : label}</span>
     </label>
   )
 }

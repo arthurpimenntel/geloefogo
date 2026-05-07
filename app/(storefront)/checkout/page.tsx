@@ -25,14 +25,14 @@ const STEP_LABELS: Record<Step, string> = { dados:'Seus Dados', entrega:'Entrega
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-amber-700 text-xs uppercase tracking-widest">{label}</label>
+      <label className="text-[#8C6D3F] text-[10px] uppercase tracking-widest font-medium">{label}</label>
       {children}
     </div>
   )
 }
 
-const INPUT = `bg-[#1A0F08] border border-amber-900/40 text-amber-100 px-4 py-2.5
-  text-sm focus:outline-none focus:border-amber-600 transition-colors placeholder:text-amber-900 w-full`
+const INPUT = `bg-white border border-[#E8DCC8] text-[#1C1008] px-4 py-2.5 rounded-xl
+  text-sm focus:outline-none focus:border-[#C08D3A] transition-colors placeholder:text-[#C4A97A] w-full`
 
 export default function CheckoutPage() {
   const router   = useRouter()
@@ -57,11 +57,8 @@ export default function CheckoutPage() {
   }
 
   const discount = cupomData
-    ? (cupomData.type === 'percent'
-        ? subtotal * (cupomData.discount / 100)
-        : cupomData.discount)
+    ? (cupomData.type === 'percent' ? subtotal * (cupomData.discount / 100) : cupomData.discount)
     : 0
-
   const pixDiscount = form.metodo === 'pix' ? subtotal * 0.05 : 0
   const total = subtotal - discount - pixDiscount + (frete ?? 0)
 
@@ -75,11 +72,7 @@ export default function CheckoutPage() {
         fetch(`/api/frete?cep=${clean}&subtotal=${subtotal}&peso=500`).then(r => r.json()),
       ])
       if (!viacep.erro) {
-        setForm(f => ({
-          ...f,
-          rua: viacep.logradouro, bairro: viacep.bairro,
-          cidade: viacep.localidade, estado: viacep.uf,
-        }))
+        setForm(f => ({ ...f, rua: viacep.logradouro, bairro: viacep.bairro, cidade: viacep.localidade, estado: viacep.uf }))
         setFrete(freteRes.preco ?? 19.90)
       }
     } catch { setFrete(19.90) }
@@ -91,8 +84,7 @@ export default function CheckoutPage() {
     setCupomLoading(true); setCupomError(null)
     try {
       const res = await fetch('/api/cupons/validar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: form.cupom.toUpperCase(), subtotal }),
       })
       const data = await res.json()
@@ -106,33 +98,18 @@ export default function CheckoutPage() {
     setLoading(true); setCheckoutError(null)
     try {
       const res = await fetch('/api/pedidos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: items.map(i => ({
-            productId: i.product.id, qty: i.quantity,
-            unitPrice: i.product.salePrice, name: i.product.name,
-          })),
-          shippingAddress: {
-            nome: form.nome, cep: form.cep, rua: form.rua,
-            numero: form.numero, complemento: form.complemento,
-            bairro: form.bairro, cidade: form.cidade, estado: form.estado,
-          },
-          shippingCost: frete ?? 0,
-          subtotal,
-          discount: discount + pixDiscount,
-          total,
-          paymentMethod: form.metodo,
-          couponCode: cupomData ? form.cupom : null,
+          items: items.map(i => ({ productId: i.product.id, qty: i.quantity, unitPrice: i.product.salePrice, name: i.product.name })),
+          shippingAddress: { nome: form.nome, cep: form.cep, rua: form.rua, numero: form.numero, complemento: form.complemento, bairro: form.bairro, cidade: form.cidade, estado: form.estado },
+          shippingCost: frete ?? 0, subtotal, discount: discount + pixDiscount, total,
+          paymentMethod: form.metodo, couponCode: cupomData ? form.cupom : null,
           customerData: { nome: form.nome, email: form.email, cpf: form.cpf, telefone: form.telefone },
         }),
       })
       const data = await res.json()
       if (!res.ok) { setCheckoutError(data.error ?? 'Erro ao criar pedido'); return }
-      if (data.orderId) {
-        clear()
-        router.push(`/checkout/confirmacao?orderId=${data.orderId}&metodo=${form.metodo}`)
-      }
+      if (data.orderId) { clear(); router.push(`/checkout/confirmacao?orderId=${data.orderId}&metodo=${form.metodo}`) }
     } catch { setCheckoutError('Erro de conexão. Tente novamente.') }
     finally { setLoading(false) }
   }
@@ -140,8 +117,8 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="max-w-xl mx-auto px-4 py-24 text-center">
-        <p className="text-amber-500 text-lg mb-4">Seu carrinho está vazio.</p>
-        <a href="/catalogo" className="text-amber-600 hover:text-amber-300 text-sm transition-colors">Ir ao catálogo →</a>
+        <p className="text-[#6B4F2A] text-lg mb-4">Seu carrinho está vazio.</p>
+        <a href="/catalogo" className="text-[#8C4A10] hover:text-[#C08D3A] text-sm transition-colors">Ir ao catálogo →</a>
       </div>
     )
   }
@@ -153,19 +130,21 @@ export default function CheckoutPage() {
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             <div className={`flex items-center gap-2 ${i <= idx ? 'opacity-100' : 'opacity-30'}`}>
-              <div className={`w-7 h-7 flex items-center justify-center text-xs font-bold
-                ${i < idx ? 'bg-amber-600 text-[#0D0805]' :
-                  i === idx ? 'border-2 border-amber-500 text-amber-300' :
-                  'border border-amber-800 text-amber-700'}`}>
+              <div className={`w-7 h-7 flex items-center justify-center text-xs font-bold rounded-lg ${
+                i < idx ? 'bg-[#C08D3A] text-white' :
+                i === idx ? 'border-2 border-[#C08D3A] text-[#8C4A10]' :
+                'border border-[#D9C9A8] text-[#B0916A]'
+              }`}>
                 {i < idx ? '✓' : i + 1}
               </div>
-              <span className={`text-xs uppercase tracking-widest hidden sm:block
-                ${i === idx ? 'text-amber-300' : 'text-amber-700'}`}>
+              <span className={`text-xs uppercase tracking-widest hidden sm:block font-medium ${
+                i === idx ? 'text-[#1C1008]' : 'text-[#B0916A]'
+              }`}>
                 {STEP_LABELS[s]}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-8 sm:w-16 h-px ${i < idx ? 'bg-amber-600' : 'bg-amber-900/40'}`} />
+              <div className={`w-8 sm:w-16 h-px ${i < idx ? 'bg-[#C08D3A]' : 'bg-[#E8DCC8]'}`} />
             )}
           </div>
         ))}
@@ -176,7 +155,7 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2 space-y-5">
           {step === 'dados' && (
             <>
-              <h2 className="font-playfair text-xl text-amber-200 mb-6">Seus Dados</h2>
+              <h2 className="font-playfair text-xl text-[#1C1008] mb-6">Seus Dados</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Nome completo">
                   <input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="João Silva" required className={INPUT} />
@@ -196,24 +175,17 @@ export default function CheckoutPage() {
 
           {step === 'entrega' && (
             <>
-              <h2 className="font-playfair text-xl text-amber-200 mb-6">Endereço de Entrega</h2>
+              <h2 className="font-playfair text-xl text-[#1C1008] mb-6">Endereço de Entrega</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2 flex gap-3">
                   <Field label="CEP">
-                    <input
-                      value={form.cep}
-                      onChange={e => set('cep', e.target.value)}
-                      onBlur={buscarCep}
-                      placeholder="00000-000"
-                      className={INPUT}
-                    />
+                    <input value={form.cep} onChange={e => set('cep', e.target.value)}
+                      onBlur={buscarCep} placeholder="00000-000" className={INPUT} />
                   </Field>
-                  <button
-                    onClick={buscarCep}
-                    disabled={freteLoading}
-                    className="self-end px-4 py-2.5 border border-amber-700 text-amber-500
-                      hover:border-amber-400 text-xs uppercase tracking-widest transition-colors
-                      disabled:opacity-50 whitespace-nowrap flex-shrink-0">
+                  <button onClick={buscarCep} disabled={freteLoading}
+                    className="self-end px-4 py-2.5 rounded-xl border border-[#D9C9A8] text-[#6B4F2A]
+                      hover:border-[#C08D3A] hover:bg-[#F5EFE6] text-xs uppercase tracking-widest
+                      transition-all disabled:opacity-50 whitespace-nowrap flex-shrink-0">
                     {freteLoading ? '...' : 'Buscar'}
                   </button>
                 </div>
@@ -227,8 +199,9 @@ export default function CheckoutPage() {
                 <Field label="Estado"><input value={form.estado} onChange={e => set('estado', e.target.value)} placeholder="PE" className={INPUT} /></Field>
               </div>
               {frete !== null && (
-                <p className="text-amber-500 text-sm mt-1">
-                  Frete: {frete === 0 ? <span className="text-green-400">Grátis!</span>
+                <p className="text-[#6B4F2A] text-sm mt-1">
+                  Frete: {frete === 0
+                    ? <span className="text-green-600 font-medium">Grátis!</span>
                     : frete.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
               )}
@@ -237,33 +210,33 @@ export default function CheckoutPage() {
 
           {step === 'pagamento' && (
             <>
-              <h2 className="font-playfair text-xl text-amber-200 mb-6">Pagamento</h2>
+              <h2 className="font-playfair text-xl text-[#1C1008] mb-6">Pagamento</h2>
               <div className="space-y-3 mb-8">
                 {([
-                  { id:'pix',    label:'Pix', desc:'5% de desconto · Confirmação instantânea', icon:'⚡' },
-                  { id:'boleto', label:'Boleto Bancário', desc:'Vence em 3 dias úteis', icon:'📄' },
-                  { id:'cartao', label:'Cartão de Crédito', desc:'Até 12x sem juros', icon:'💳' },
+                  { id:'pix',    label:'Pix',               desc:'5% de desconto · Confirmação instantânea', icon:'⚡' },
+                  { id:'boleto', label:'Boleto Bancário',    desc:'Vence em 3 dias úteis',                   icon:'📄' },
+                  { id:'cartao', label:'Cartão de Crédito',  desc:'Até 12x sem juros',                       icon:'💳' },
                 ] as const).map(({ id, label, desc, icon }) => (
                   <label key={id}
-                    className={`flex items-center gap-4 p-4 border cursor-pointer transition-all ${
+                    className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
                       form.metodo === id
-                        ? 'border-amber-600 bg-amber-900/20'
-                        : 'border-amber-900/30 hover:border-amber-800'
+                        ? 'border-[#C08D3A] bg-[#FAF7F2] shadow-sm'
+                        : 'border-[#E8DCC8] hover:border-[#D9C9A8] bg-white'
                     }`}>
                     <input type="radio" name="metodo" value={id} checked={form.metodo === id}
-                      onChange={() => set('metodo', id)} className="accent-amber-500" />
+                      onChange={() => set('metodo', id)} className="accent-[#C08D3A]" />
                     <span className="text-xl">{icon}</span>
                     <div>
-                      <p className="text-amber-200 text-sm font-medium">{label}</p>
-                      <p className="text-amber-700 text-xs">{desc}</p>
+                      <p className="text-[#1C1008] text-sm font-medium">{label}</p>
+                      <p className="text-[#B0916A] text-xs">{desc}</p>
                     </div>
                   </label>
                 ))}
               </div>
 
               {/* Cupom */}
-              <div className="border-t border-amber-900/20 pt-6">
-                <p className="text-amber-600 text-xs uppercase tracking-widest mb-3">Cupom de Desconto</p>
+              <div className="border-t border-[#E8DCC8] pt-6">
+                <p className="text-[#8C6D3F] text-[10px] uppercase tracking-widest mb-3 font-medium">Cupom de Desconto</p>
                 <div className="flex gap-2">
                   <input
                     value={form.cupom}
@@ -271,28 +244,27 @@ export default function CheckoutPage() {
                     placeholder="CÓDIGO DO CUPOM"
                     className={INPUT}
                   />
-                  <button
-                    onClick={validarCupom}
-                    disabled={!form.cupom || cupomLoading}
-                    className="px-4 border border-amber-700 text-amber-500 hover:border-amber-500
-                      text-xs uppercase tracking-widest transition-colors disabled:opacity-40 flex-shrink-0">
+                  <button onClick={validarCupom} disabled={!form.cupom || cupomLoading}
+                    className="px-4 rounded-xl border border-[#D9C9A8] text-[#6B4F2A] hover:border-[#C08D3A]
+                      hover:bg-[#F5EFE6] text-xs uppercase tracking-widest transition-all
+                      disabled:opacity-40 flex-shrink-0">
                     {cupomLoading ? '...' : 'Aplicar'}
                   </button>
                 </div>
                 {cupomData && (
-                  <p className="text-green-400 text-xs mt-2">
+                  <p className="text-green-600 text-xs mt-2 font-medium">
                     ✓ Cupom aplicado! Desconto de {cupomData.type === 'percent'
                       ? `${cupomData.discount}%`
                       : cupomData.discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </p>
                 )}
-                {cupomError && <p className="text-red-400 text-xs mt-2">✕ {cupomError}</p>}
+                {cupomError && <p className="text-red-500 text-xs mt-2">✕ {cupomError}</p>}
               </div>
             </>
           )}
 
           {checkoutError && (
-            <div className="bg-red-900/20 border border-red-700/40 px-4 py-3 text-red-300 text-sm">
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
               ❌ {checkoutError}
             </div>
           )}
@@ -301,7 +273,7 @@ export default function CheckoutPage() {
           <div className="flex justify-between pt-4">
             {idx > 0 ? (
               <button onClick={() => setStep(STEPS[idx - 1])}
-                className="text-amber-600 hover:text-amber-300 text-xs uppercase tracking-widest transition-colors">
+                className="text-[#8C6D3F] hover:text-[#1C1008] text-xs uppercase tracking-widest transition-colors">
                 ← Voltar
               </button>
             ) : <div />}
@@ -309,14 +281,14 @@ export default function CheckoutPage() {
             {idx < STEPS.length - 1 ? (
               <button onClick={() => setStep(STEPS[idx + 1])}
                 disabled={step === 'dados' && !form.nome}
-                className="px-8 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-50
-                  text-[#0D0805] text-xs font-bold uppercase tracking-widest transition-colors">
+                className="px-8 py-3 rounded-xl bg-[#1C1008] hover:bg-[#3D2010] disabled:opacity-50
+                  text-white text-xs font-bold uppercase tracking-widest transition-colors">
                 Continuar →
               </button>
             ) : (
               <button onClick={finalizarPedido} disabled={loading}
-                className="px-8 py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-50
-                  text-[#0D0805] text-xs font-bold uppercase tracking-widest transition-colors">
+                className="px-8 py-3 rounded-xl bg-[#1C1008] hover:bg-[#3D2010] disabled:opacity-50
+                  text-white text-xs font-bold uppercase tracking-widest transition-colors">
                 {loading ? 'Processando...' : '🔒 Finalizar Pedido'}
               </button>
             )}
@@ -324,53 +296,53 @@ export default function CheckoutPage() {
         </div>
 
         {/* Order summary */}
-        <div className="bg-[#1A0F08] border border-amber-900/20 p-6 h-fit sticky top-24">
-          <h3 className="font-playfair text-lg text-amber-200 mb-5">Resumo</h3>
+        <div className="bg-white border border-[#E8DCC8] rounded-2xl p-6 h-fit sticky top-24 shadow-sm">
+          <h3 className="font-playfair text-lg text-[#1C1008] mb-5">Resumo</h3>
           <ul className="space-y-3 mb-5 max-h-64 overflow-y-auto">
             {items.map(({ product, quantity }) => (
               <li key={product.id} className="flex gap-3">
                 {product.images?.[0] && (
                   <img src={product.images[0]} alt={product.name}
-                    className="w-12 h-12 object-cover flex-shrink-0" />
+                    className="w-12 h-12 object-cover flex-shrink-0 rounded-lg border border-[#E8DCC8]" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-amber-200 text-xs truncate">{product.name}</p>
-                  <p className="text-amber-700 text-xs">×{quantity}</p>
+                  <p className="text-[#1C1008] text-xs truncate font-medium">{product.name}</p>
+                  <p className="text-[#B0916A] text-xs">×{quantity}</p>
                 </div>
-                <p className="text-amber-400 text-xs font-medium whitespace-nowrap">
+                <p className="text-[#8C4A10] text-xs font-semibold whitespace-nowrap">
                   {(Number(product.salePrice) * quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
               </li>
             ))}
           </ul>
-          <div className="border-t border-amber-900/20 pt-4 space-y-2 text-sm">
+          <div className="border-t border-[#E8DCC8] pt-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-amber-700">Subtotal</span>
-              <span className="text-amber-300">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+              <span className="text-[#8C6D3F]">Subtotal</span>
+              <span className="text-[#1C1008]">{subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
             {frete !== null && (
               <div className="flex justify-between">
-                <span className="text-amber-700">Frete</span>
-                <span className={frete === 0 ? 'text-green-400' : 'text-amber-300'}>
+                <span className="text-[#8C6D3F]">Frete</span>
+                <span className={frete === 0 ? 'text-green-600 font-medium' : 'text-[#1C1008]'}>
                   {frete === 0 ? 'Grátis' : frete.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
               </div>
             )}
             {discount > 0 && (
               <div className="flex justify-between">
-                <span className="text-amber-700">Desconto cupom</span>
-                <span className="text-green-400">-{discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                <span className="text-[#8C6D3F]">Desconto cupom</span>
+                <span className="text-green-600 font-medium">-{discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
               </div>
             )}
             {pixDiscount > 0 && (
               <div className="flex justify-between">
-                <span className="text-amber-700">Desconto Pix (5%)</span>
-                <span className="text-green-400">-{pixDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                <span className="text-[#8C6D3F]">Desconto Pix (5%)</span>
+                <span className="text-green-600 font-medium">-{pixDiscount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
               </div>
             )}
-            <div className="flex justify-between font-medium pt-2 border-t border-amber-900/20">
-              <span className="text-amber-400">Total</span>
-              <span className="text-amber-300 font-playfair text-lg">
+            <div className="flex justify-between font-semibold pt-3 border-t border-[#E8DCC8]">
+              <span className="text-[#1C1008]">Total</span>
+              <span className="text-[#8C4A10] font-playfair text-lg">
                 {Math.max(0, total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
             </div>

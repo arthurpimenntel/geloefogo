@@ -11,7 +11,6 @@ export default async function PedidosPage() {
     .order('created_at', { ascending: false })
     .limit(100)
 
-  // Normalize created_at key for OrderKanban
   const normalized = (orders ?? []).map((o: any) => ({
     ...o,
     createdAt: o.created_at,
@@ -21,8 +20,8 @@ export default async function PedidosPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-playfair text-2xl text-amber-100 font-semibold">Pedidos</h1>
-        <p className="text-amber-700 text-sm mt-1">
+        <h1 className="font-playfair text-2xl text-[#1C1008] font-semibold">Pedidos</h1>
+        <p className="text-[#8C6D3F] text-sm mt-1">
           Arraste os cards para atualizar o status · {orders?.length ?? 0} pedidos carregados
         </p>
       </div>

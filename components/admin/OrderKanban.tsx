@@ -12,13 +12,13 @@ interface Order {
   customerName?: string
 }
 
-const COLS: { id: OrderStatus; label: string; color: string; dot: string }[] = [
-  { id: 'aguardando_pagamento', label: 'Aguardando', color: 'border-yellow-700', dot: 'bg-yellow-500' },
-  { id: 'pago',                 label: 'Pago',       color: 'border-blue-600',   dot: 'bg-blue-500'   },
-  { id: 'processando',          label: 'Processando',color: 'border-amber-600',  dot: 'bg-amber-500'  },
-  { id: 'enviado',              label: 'Enviado',    color: 'border-purple-600', dot: 'bg-purple-500' },
-  { id: 'entregue',             label: 'Entregue',   color: 'border-green-600',  dot: 'bg-green-500'  },
-  { id: 'devolvido',            label: 'Devolvido',  color: 'border-red-800',    dot: 'bg-red-500'    },
+const COLS: { id: OrderStatus; label: string; color: string; dot: string; badge: string }[] = [
+  { id: 'aguardando_pagamento', label: 'Aguardando', color: 'border-t-yellow-400', dot: 'bg-yellow-400', badge: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
+  { id: 'pago',                 label: 'Pago',       color: 'border-t-blue-400',   dot: 'bg-blue-400',   badge: 'bg-blue-50 text-blue-700 border border-blue-200'   },
+  { id: 'processando',          label: 'Processando',color: 'border-t-amber-400',  dot: 'bg-amber-400',  badge: 'bg-amber-50 text-amber-700 border border-amber-200'  },
+  { id: 'enviado',              label: 'Enviado',    color: 'border-t-purple-400', dot: 'bg-purple-400', badge: 'bg-purple-50 text-purple-700 border border-purple-200' },
+  { id: 'entregue',             label: 'Entregue',   color: 'border-t-green-400',  dot: 'bg-green-400',  badge: 'bg-green-50 text-green-700 border border-green-200'  },
+  { id: 'devolvido',            label: 'Devolvido',  color: 'border-t-red-400',    dot: 'bg-red-400',    badge: 'bg-red-50 text-red-700 border border-red-200'    },
 ]
 
 export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
@@ -57,13 +57,13 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
     <div>
       {/* Summary strip */}
       <div className="flex gap-4 mb-6 flex-wrap">
-        <div className="bg-[#1A0F08] border border-amber-900/20 px-4 py-3">
-          <p className="text-amber-800 text-[10px] uppercase tracking-widest">Total pedidos</p>
-          <p className="text-amber-300 text-lg font-playfair">{orders.length}</p>
+        <div className="bg-white border border-[#E8DCC8] rounded-2xl px-4 py-3 shadow-sm">
+          <p className="text-[#8C6D3F] text-[10px] uppercase tracking-widest">Total pedidos</p>
+          <p className="text-[#1C1008] text-lg font-playfair">{orders.length}</p>
         </div>
-        <div className="bg-[#1A0F08] border border-amber-900/20 px-4 py-3">
-          <p className="text-amber-800 text-[10px] uppercase tracking-widest">Receita (ativos)</p>
-          <p className="text-amber-300 text-lg font-playfair">
+        <div className="bg-white border border-[#E8DCC8] rounded-2xl px-4 py-3 shadow-sm">
+          <p className="text-[#8C6D3F] text-[10px] uppercase tracking-widest">Receita (ativos)</p>
+          <p className="text-[#C08D3A] text-lg font-playfair">
             {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </div>
@@ -73,12 +73,11 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
       <div className="flex gap-3 overflow-x-auto pb-6 -mx-4 px-4">
         {COLS.map(col => {
           const colOrders = orders.filter(o => o.status === col.id)
-          const isDragOver = false
           return (
             <div
               key={col.id}
-              className={`flex-shrink-0 w-52 md:w-56 bg-[#1A0F08] border-t-2 ${col.color}
-                transition-colors`}
+              className={`flex-shrink-0 w-52 md:w-56 bg-[#FAF7F2] border border-[#E8DCC8] rounded-2xl
+                border-t-2 ${col.color} transition-colors shadow-sm`}
               onDragOver={e => { e.preventDefault() }}
               onDrop={e => {
                 e.preventDefault()
@@ -87,14 +86,14 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
                 setDragId(null)
               }}
             >
-              <div className="p-3 flex items-center justify-between border-b border-amber-900/20">
+              <div className="p-3 flex items-center justify-between border-b border-[#E8DCC8]">
                 <div className="flex items-center gap-2">
                   <div className={`w-1.5 h-1.5 rounded-full ${col.dot}`} />
-                  <span className="text-amber-400 text-[11px] font-medium uppercase tracking-widest">
+                  <span className="text-[#6B4F2A] text-[11px] font-medium uppercase tracking-widest">
                     {col.label}
                   </span>
                 </div>
-                <span className="bg-amber-900/40 text-amber-600 text-[10px] px-1.5 py-0.5">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${col.badge}`}>
                   {colOrders.length}
                 </span>
               </div>
@@ -109,18 +108,18 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
                       setDragId(order.id)
                     }}
                     onDragEnd={() => setDragId(null)}
-                    className={`bg-[#231409] border p-3 cursor-grab active:cursor-grabbing
-                      hover:border-amber-700 transition-all select-none
-                      ${dragId === order.id ? 'border-amber-600 opacity-50' : 'border-amber-900/30'}`}
+                    className={`bg-white border border-[#E8DCC8] rounded-xl p-3 cursor-grab active:cursor-grabbing
+                      hover:border-[#C08D3A] hover:shadow-sm transition-all select-none
+                      ${dragId === order.id ? 'border-[#C08D3A] opacity-50' : ''}`}
                   >
-                    <p className="text-amber-500 text-[10px] font-mono">#{order.id.slice(0, 8)}</p>
+                    <p className="text-[#B0916A] text-[10px] font-mono">#{order.id.slice(0, 8)}</p>
                     {order.customerName && (
-                      <p className="text-amber-300 text-xs mt-1 truncate">{order.customerName}</p>
+                      <p className="text-[#1C1008] text-xs mt-1 truncate font-medium">{order.customerName}</p>
                     )}
-                    <p className="text-amber-100 text-sm font-medium mt-1">
+                    <p className="text-[#8C4A10] text-sm font-semibold mt-1">
                       {order.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </p>
-                    <p className="text-amber-800 text-[10px] mt-1">
+                    <p className="text-[#B0916A] text-[10px] mt-1">
                       {new Date(order.createdAt).toLocaleDateString('pt-BR')}
                     </p>
                     {/* Quick move select */}
@@ -128,8 +127,8 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
                       value={order.status}
                       onChange={e => moveOrder(order.id, e.target.value as OrderStatus)}
                       onClick={e => e.stopPropagation()}
-                      className="mt-2 w-full bg-[#0D0805] border border-amber-900/40 text-amber-700
-                        text-[10px] px-1.5 py-1 focus:outline-none focus:border-amber-700"
+                      className="mt-2 w-full bg-[#FAF7F2] border border-[#D9C9A8] rounded-lg text-[#6B4F2A]
+                        text-[10px] px-1.5 py-1 focus:outline-none focus:border-[#C08D3A] transition-colors"
                     >
                       {COLS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
@@ -137,7 +136,7 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
                 ))}
                 {colOrders.length === 0 && (
                   <div className="h-16 flex items-center justify-center">
-                    <p className="text-amber-900/60 text-[10px] uppercase tracking-widest">Vazio</p>
+                    <p className="text-[#D9C9A8] text-[10px] uppercase tracking-widest">Vazio</p>
                   </div>
                 )}
               </div>
