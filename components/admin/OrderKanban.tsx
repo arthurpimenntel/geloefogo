@@ -69,15 +69,14 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
         </div>
       </div>
 
-      {/* Kanban board */}
-      <div className="flex gap-3 overflow-x-auto pb-6 -mx-4 px-4">
+      {/* Kanban board — grid que quebra linhas: 2 cols mobile, 3 tablet, 6 desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {COLS.map(col => {
           const colOrders = orders.filter(o => o.status === col.id)
           return (
             <div
               key={col.id}
-              className={`flex-shrink-0 w-52 md:w-56 bg-[#FAF7F2] border border-[#E8DCC8] rounded-2xl
-                border-t-2 ${col.color} transition-colors shadow-sm`}
+              className={`bg-[#FAF7F2] border border-[#E8DCC8] rounded-2xl border-t-2 ${col.color} transition-colors shadow-sm`}
               onDragOver={e => { e.preventDefault() }}
               onDrop={e => {
                 e.preventDefault()
@@ -122,7 +121,6 @@ export function OrderKanban({ initialOrders }: { initialOrders: Order[] }) {
                     <p className="text-[#B0916A] text-[10px] mt-1">
                       {new Date(order.createdAt).toLocaleDateString('pt-BR')}
                     </p>
-                    {/* Quick move select */}
                     <select
                       value={order.status}
                       onChange={e => moveOrder(order.id, e.target.value as OrderStatus)}

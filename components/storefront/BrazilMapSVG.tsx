@@ -31,52 +31,65 @@ const REGION_COLORS: Record<string, string> = {
 }
 
 export function BrazilMapSVG() {
-  const infoRef    = useRef<HTMLDivElement>(null)
-  const labelRef   = useRef<HTMLParagraphElement>(null)
-  const activeRef  = useRef<string | null>(null)
-  const pathsRef   = useRef<Map<string, SVGPathElement[]>>(new Map())
+  const infoRef   = useRef<HTMLDivElement>(null)
+  const labelRef  = useRef<HTMLParagraphElement>(null)
+  // Tracks the currently hovered region (not state — region)
+  const activeRef = useRef<string | null>(null)
+  const pathsRef  = useRef<Map<string, SVGPathElement[]>>(new Map())
 
-  const highlightRegion = useCallback((region: string | null) => {
-    if (activeRef.current === region) return
-    activeRef.current = region
-
-    // Reset all paths
+  // Resets all regions to their default colors
+  const resetAll = useCallback(() => {
     pathsRef.current.forEach((paths, reg) => {
       paths.forEach(path => {
-        path.style.fill = REGION_COLORS[reg] ?? '#D9CEBD'
-        path.style.stroke = '#F5EFE6'
+        path.style.fill        = REGION_COLORS[reg] ?? '#D9CEBD'
+        path.style.stroke      = '#F5EFE6'
         path.style.strokeWidth = '0.5'
       })
     })
+  }, [])
 
-    // Highlight hovered region
-    if (region) {
-      const paths = pathsRef.current.get(region) ?? []
-      paths.forEach(path => {
-        path.style.fill = '#1C1C1C'
-        path.style.stroke = '#C9A96E'
-        path.style.strokeWidth = '1.2'
-      })
-    }
+  // Highlights all paths for a given region
+  const highlightRegion = useCallback((region: string) => {
+    const paths = pathsRef.current.get(region) ?? []
+    paths.forEach(path => {
+      path.style.fill        = '#1C1C1C'
+      path.style.stroke      = '#C9A96E'
+      path.style.strokeWidth = '1.2'
+    })
+  }, [])
 
-    // Update info panel via DOM (zero re-render)
-    if (infoRef.current && labelRef.current) {
-      if (region && REGION_INFO[region]) {
-        const info = REGION_INFO[region]
-        infoRef.current.innerHTML = `
-          <div class="bg-white/70 backdrop-blur-sm border border-[#D4B896]/40 rounded-2xl px-8 py-4 shadow-sm">
-            <p class="text-[#1C1C1C] font-serif font-bold text-base">${info.label}</p>
-            <p class="text-[#8B7355] text-sm mt-0.5 tracking-wide">${info.prazo}</p>
-          </div>
-        `
-        infoRef.current.style.opacity = '1'
-        labelRef.current.style.opacity = '0'
-      } else {
-        infoRef.current.style.opacity = '0'
-        labelRef.current.style.opacity = '1'
-      }
+  const showInfo = useCallback((region: string | null) => {
+    if (!infoRef.current || !labelRef.current) return
+    if (region && REGION_INFO[region]) {
+      const info = REGION_INFO[region]
+      infoRef.current.innerHTML = `
+        <div class="bg-white/70 backdrop-blur-sm border border-[#D4B896]/40 rounded-2xl px-8 py-4 shadow-sm">
+          <p class="text-[#1C1C1C] font-serif font-bold text-base">${info.label}</p>
+          <p class="text-[#8B7355] text-sm mt-0.5 tracking-wide">${info.prazo}</p>
+        </div>
+      `
+      infoRef.current.style.opacity  = '1'
+      labelRef.current.style.opacity = '0'
+    } else {
+      infoRef.current.style.opacity  = '0'
+      labelRef.current.style.opacity = '1'
     }
   }, [])
+
+  const handleEnter = useCallback((region: string) => {
+    // Always reset first so previous highlighted region is fully cleared,
+    // then highlight the new one — even if it's the same region (different state)
+    resetAll()
+    highlightRegion(region)
+    activeRef.current = region
+    showInfo(region)
+  }, [resetAll, highlightRegion, showInfo])
+
+  const handleLeave = useCallback(() => {
+    resetAll()
+    activeRef.current = null
+    showInfo(null)
+  }, [resetAll, showInfo])
 
   const registerPath = useCallback((region: string, el: SVGPathElement | null) => {
     if (!el) return
@@ -108,8 +121,8 @@ export function BrazilMapSVG() {
                     key={geo.rsmKey ?? geo.id ?? geo.properties?.name}
                     geography={geo}
                     ref={(el: SVGPathElement | null) => registerPath(region, el)}
-                    onMouseEnter={() => highlightRegion(region)}
-                    onMouseLeave={() => highlightRegion(null)}
+                    onMouseEnter={() => handleEnter(region)}
+                    onMouseLeave={() => handleLeave()}
                     style={{
                       default: {
                         fill: REGION_COLORS[region],
@@ -132,18 +145,21 @@ export function BrazilMapSVG() {
       </div>
 
       {/* Info panel — atualizado via DOM, sem re-render */}
-      <div className="text-center min-h-[70px] flex flex-col items-center justify-center relative">
-        <div
-          ref={infoRef}
-          style={{ opacity: 0, transition: 'opacity 0.15s ease' }}
-        />
-        <p
-          ref={labelRef}
-          className="text-[#8B7355] text-xs tracking-[0.25em] uppercase absolute"
-          style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
-        >
-          Passe o mouse sobre sua região
-        </p>
+      <div className="text-center min-h-[70px] flex items-center justify-center">
+        {/* FIX: ambos ficam no mesmo flow (sem absolute), a visibilidade é controlada por opacity */}
+        <div style={{ position: 'relative', minHeight: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div
+            ref={infoRef}
+            style={{ opacity: 0, transition: 'opacity 0.15s ease', position: 'absolute' }}
+          />
+          <p
+            ref={labelRef}
+            className="text-[#8B7355] text-xs tracking-[0.25em] uppercase"
+            style={{ opacity: 1, transition: 'opacity 0.15s ease' }}
+          >
+            Passe o mouse sobre sua região
+          </p>
+        </div>
       </div>
 
       {/* Legenda */}

@@ -14,8 +14,8 @@ function LensZoom({ src, alt, active }: { src: string; alt: string; active: bool
   const containerRef = useRef<HTMLDivElement>(null)
   const [lens, setLens] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false })
 
-  const LENS_SIZE = 150
-  const ZOOM = 3
+  const LENS_SIZE = 300
+  const ZOOM = 4
 
   function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     if (!containerRef.current) return
