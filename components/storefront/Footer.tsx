@@ -154,7 +154,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="border-t border-[#D4B896]/40 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[#8B7355] text-xs tracking-wide">
-            © 2024 Gelo & Fogo. Todos os direitos reservados.
+            © 2026 Gelo & Fogo. Todos os direitos reservados.
           </p>
           <p className="text-[#8B7355] text-xs tracking-wide">
             Cartão · PIX · Boleto

@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react'
 
 interface Supplier {
@@ -37,30 +38,34 @@ export function SupplierStatus({ supplier }: { supplier: Supplier }) {
   }
 
   return (
-    <div className="bg-[#1A0F08] border border-amber-900/20 p-5 flex items-center gap-6">
+    <div className="bg-white border border-[#E8DCC8] rounded-2xl shadow-sm p-5 flex items-center gap-6">
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${supplier.active ? 'bg-green-400' : 'bg-red-500'}`} />
-          <p className="text-amber-200 font-medium">{supplier.name}</p>
+          <div className={`w-2 h-2 rounded-full ${supplier.active ? 'bg-green-400' : 'bg-red-400'}`} />
+          <p className="text-[#1C1008] font-medium">{supplier.name}</p>
         </div>
-        <div className="flex gap-4 mt-2">
-          <span className="text-amber-700 text-xs">{TYPE_LABEL[supplier.type] ?? supplier.type}</span>
-          <span className="text-amber-700 text-xs">Markup: {supplier.markup_pct}%</span>
-          <span className="text-amber-700 text-xs">Prioridade: {supplier.priority}</span>
+        <div className="flex gap-4 mt-2 flex-wrap">
+          <span className="text-[#8C6D3F] text-xs">{TYPE_LABEL[supplier.type] ?? supplier.type}</span>
+          <span className="text-[#8C6D3F] text-xs">Markup: {supplier.markup_pct}%</span>
+          <span className="text-[#8C6D3F] text-xs">Prioridade: {supplier.priority}</span>
           {supplier.last_sync && (
-            <span className="text-amber-800 text-xs">
+            <span className="text-[#B0916A] text-xs">
               Última sync: {new Date(supplier.last_sync).toLocaleString('pt-BR')}
             </span>
           )}
         </div>
-        {result && <p className="text-xs mt-2 text-amber-500">{result}</p>}
+        {result && (
+          <p className={`text-xs mt-2 font-medium ${result.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>
+            {result}
+          </p>
+        )}
       </div>
       <button
         onClick={handleSync}
         disabled={syncing || !supplier.active}
-        className="px-4 py-2 border border-amber-800 hover:border-amber-600 text-amber-600
-          hover:text-amber-300 text-xs uppercase tracking-widest transition-colors
-          disabled:opacity-40 disabled:cursor-not-allowed"
+        className="px-4 py-2 border border-[#D9C9A8] rounded-xl text-[#6B4F2A]
+          hover:border-[#C08D3A] hover:bg-[#F5EFE6] text-xs uppercase tracking-widest
+          transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
       >
         {syncing ? '...' : '🔄 Sync'}
       </button>

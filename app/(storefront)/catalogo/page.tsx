@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { ProductCard } from '@/components/storefront/ProductCard'
+import ProductCardQuadrant from '@/components/storefront/ProductCardQuadrant'
 import { CatalogFilters } from '@/components/storefront/CatalogFilters'
 
 interface SearchParams {
@@ -48,19 +48,16 @@ export default async function CatalogoPage({
     .is('deleted_at', null)
     .limit(PAGE + 1)
 
-  // Ordenação
   if (params.ordem === 'recente') {
     query = query.order('created_at', { ascending: false })
   } else {
     query = query.order('created_at', { ascending: false })
   }
 
-  // Destaques
   if (params.destaque === 'true') {
     query = query.eq('featured', true)
   }
 
-  // Busca textual
   if (params.q) {
     query = query.textSearch('search_vector', params.q, {
       type: 'websearch', config: 'portuguese',
@@ -89,7 +86,6 @@ export default async function CatalogoPage({
     ? (items[items.length - 1] as any).created_at
     : null
 
-  // Título dinâmico
   const title = params.destaque === 'true'
     ? 'Destaques'
     : params.ordem === 'recente'
@@ -108,18 +104,16 @@ export default async function CatalogoPage({
     <main className="min-h-screen bg-[#F5EFE6]">
       <div className="max-w-[1600px] mx-auto px-6 py-12">
 
-        {/* ── Cabeçalho ── */}
+        {/* Cabeçalho */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-6 border-b border-[#D4B896]/40">
           <div>
             <p className="text-xs tracking-[0.3em] uppercase text-[#8B7355] mb-1">{subtitle}</p>
             <h1 className="text-4xl font-serif font-bold text-[#1C1C1C]">{title}</h1>
           </div>
           <div className="flex items-center gap-6">
-            {/* Filtros inline */}
             <div className="hidden lg:block">
               <CatalogFilters />
             </div>
-            {/* Mobile filtros */}
             <div className="lg:hidden">
               <CatalogFilters mobile />
             </div>
@@ -129,7 +123,7 @@ export default async function CatalogoPage({
           </div>
         </div>
 
-        {/* ── Grid ── */}
+        {/* Grid */}
         {items.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-[#8B7355] font-serif text-xl mb-2">Nenhum produto encontrado.</p>
@@ -142,11 +136,7 @@ export default async function CatalogoPage({
             </a>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {items.map(p => (
-              <ProductCard key={p.id} product={p as any} />
-            ))}
-          </div>
+          <ProductCardQuadrant products={items as any} />
         )}
 
         {nextCursor && (
