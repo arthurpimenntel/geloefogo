@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function HeroSection() {
-  const [isDesktop, setIsDesktop] = useState(false);
+  // Lê a largura real já no primeiro render (evita carregar o vídeo errado
+  // e trocar por outro logo em seguida, o que dobrava o download inicial).
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth >= 768
+  );
 
   useEffect(() => {
     const update = () => setIsDesktop(window.innerWidth >= 768);
-    update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
   }, []);
@@ -21,6 +24,8 @@ export default function HeroSection() {
         loop
         muted
         playsInline
+        preload="auto"
+        poster="/video/hero-poster.jpg"
         className="absolute inset-0 w-full h-full object-cover opacity-50"
         key={isDesktop ? 'desktop' : 'mobile'}
       >
